@@ -1,55 +1,64 @@
-# Plugin Template
+# Canvas Format Brush for Obsidian
 
-This is a template for creating plugins for [Obsidian](https://obsidian.md), maintained by [wenlzhang](https://github.com/wenlzhang).
+This plugin allows you to copy formatting attributes from one canvas element and apply them to other canvas elements in [Obsidian](https://obsidian.md).
 
-## Getting started
+## Features
 
-1. Clone this repository to your local machine
-2. Update the following files with your plugin information:
-   - `manifest.json`:
-     - `id`: Your plugin ID (in kebab-case)
-     - `name`: Your plugin name
-     - `author`: Your name
-     - `authorUrl`: Your website or GitHub profile URL
-     - `fundingUrl`: Optional funding information
-   - `package.json`:
-     - `name`: Your plugin name (should match manifest.json)
-     - `description`: Your plugin description
-     - `author`: Your name
-     - `keywords`: Relevant keywords for your plugin
+- Copy and paste formatting between canvas elements
+- Supports copying:
+  - Card color
+  - Card size
+  - Border color
+  - Background color
+- Context menu integration for easy access
+- Status bar indicator showing when format is copied
+- Commands for keyboard shortcuts
 
-## Development
+## How to Use
 
-1. Install dependencies:
-```bash
-npm install
-```
+1. Select a canvas element you want to copy formatting from
+2. Right-click and select "Copy format" from the context menu (or use the command)
+3. Select one or more canvas elements you want to apply the formatting to
+4. Right-click and select "Paste format" from the context menu (or use the command)
 
-2. Start development server:
-```bash
-npm run dev
-```
+## Commands
 
-3. Build the plugin:
-```bash
-npm run build
-```
+- **Copy format from selected canvas element**: Copies formatting attributes from the currently selected canvas element
+- **Paste format to selected canvas elements**: Applies the copied formatting to all currently selected canvas elements
 
-## Testing your plugin
+## Settings
 
-1. Create a test vault in Obsidian
-2. Create a `.obsidian/plugins` folder in your test vault
-3. Copy your plugin folder into the plugins folder
-4. Reload Obsidian to load the plugin (Ctrl/Cmd + R)
-5. Enable the plugin in Obsidian's settings
+You can customize which formatting attributes are copied:
 
-## Publishing your plugin
+- **Copy color**: Enable/disable copying of the card color
+- **Copy size**: Enable/disable copying of the card size
+- **Copy border color**: Enable/disable copying of the border color
+- **Copy background color**: Enable/disable copying of the background color
 
-1. Update `versions.json` with your plugin's version history
-2. Test your plugin thoroughly
-3. Create a GitHub release
-4. Submit your plugin to the Obsidian Plugin Gallery
+Additional settings:
 
-## Support me
+- **Show status bar item**: Show/hide the format brush status in the status bar
+- **Enable hotkeys**: Enable/disable hotkeys for copy and paste format (configure in Obsidian hotkeys settings)
 
-<a href='https://ko-fi.com/C0C66C1TB' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi1.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+## Installation
+
+### From Obsidian
+
+1. Open Settings in Obsidian
+2. Go to Community Plugins and turn off Safe Mode
+3. Click Browse and search for "Canvas Format Brush"
+4. Install the plugin and enable it
+
+### Manual Installation
+
+1. Download the latest release from the releases page
+2. Extract the zip file into your Obsidian vault's `.obsidian/plugins` folder
+3. Enable the plugin in Obsidian's Community Plugins settings
+
+## Support
+
+If you encounter any issues or have suggestions for improvements, please create an issue on the GitHub repository.
+
+## License
+
+This project is licensed under the MIT License.

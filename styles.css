@@ -1,0 +1,29 @@
+/* Canvas Format Brush Plugin Styles */
+
+.canvas-format-brush-status {
+    display: flex;
+    align-items: center;
+}
+
+.canvas-format-brush-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.canvas-format-brush-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.canvas-format-brush-text {
+    font-size: 12px;
+}
+
+.canvas-format-brush-color-preview {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1px solid var(--background-modifier-border);
+}
