@@ -48,30 +48,6 @@ export class SettingsTab extends PluginSettingTab {
                     }),
             );
 
-        new Setting(containerEl)
-            .setName("Copy border color")
-            .setDesc("Copy the border color of the canvas element")
-            .addToggle((toggle: ToggleComponent) =>
-                toggle
-                    .setValue(this.plugin.settings.copyBorderColor)
-                    .onChange(async (value: boolean) => {
-                        this.plugin.settings.copyBorderColor = value;
-                        await this.plugin.saveSettings();
-                    }),
-            );
-
-        new Setting(containerEl)
-            .setName("Copy background color")
-            .setDesc("Copy the background color of the canvas element")
-            .addToggle((toggle: ToggleComponent) =>
-                toggle
-                    .setValue(this.plugin.settings.copyBackgroundColor)
-                    .onChange(async (value: boolean) => {
-                        this.plugin.settings.copyBackgroundColor = value;
-                        await this.plugin.saveSettings();
-                    }),
-            );
-
         // Hotkeys Section
         containerEl.createEl("h3", { text: "Hotkeys" });
 

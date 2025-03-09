@@ -10,8 +10,6 @@ interface CanvasNodeData {
     width: number;
     height: number;
     color?: string;
-    borderColor?: string;
-    backgroundColor?: string;
 }
 
 interface CanvasNode {
@@ -21,12 +19,8 @@ interface CanvasNode {
     width: number;
     height: number;
     color?: string;
-    borderColor?: string;
-    backgroundColor?: string;
     // Methods that might be available
     setColor?: (color: string) => void;
-    setBorderColor?: (color: string) => void;
-    setBackgroundColor?: (color: string) => void;
     setDimensions?: (width: number, height: number) => void;
     // Data property that might contain the actual node data
     data?: CanvasNodeData;
@@ -59,8 +53,6 @@ export default class CanvasFormatBrushPlugin extends Plugin {
         color?: string;
         width?: number;
         height?: number;
-        borderColor?: string;
-        backgroundColor?: string;
     } | null = null;
 
     async onload() {
@@ -295,24 +287,6 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 this.copiedFormat.height = Number(node.height);
             }
 
-            if (
-                this.settings.copyBorderColor &&
-                node.borderColor !== undefined
-            ) {
-                console.log("Copying border color:", node.borderColor);
-                this.copiedFormat.borderColor = String(node.borderColor);
-            }
-
-            if (
-                this.settings.copyBackgroundColor &&
-                node.backgroundColor !== undefined
-            ) {
-                console.log("Copying background color:", node.backgroundColor);
-                this.copiedFormat.backgroundColor = String(
-                    node.backgroundColor,
-                );
-            }
-
             console.log("Copied format:", this.copiedFormat);
 
             // Show a notice
@@ -348,8 +322,6 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 color: node.color,
                 width: node.width,
                 height: node.height,
-                borderColor: node.borderColor,
-                backgroundColor: node.backgroundColor,
             };
 
             console.log("Original values:", originalValues);
@@ -359,8 +331,6 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 color?: string;
                 width?: number;
                 height?: number;
-                borderColor?: string;
-                backgroundColor?: string;
             }
 
             let changes: CanvasNodeChanges = {};
@@ -377,16 +347,6 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             ) {
                 changes.width = this.copiedFormat.width;
                 changes.height = this.copiedFormat.height;
-                changesMade = true;
-            }
-
-            if (this.copiedFormat.borderColor !== undefined) {
-                changes.borderColor = this.copiedFormat.borderColor;
-                changesMade = true;
-            }
-
-            if (this.copiedFormat.backgroundColor !== undefined) {
-                changes.backgroundColor = this.copiedFormat.backgroundColor;
                 changesMade = true;
             }
 
@@ -437,26 +397,6 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                         console.log("Setting width/height directly");
                         node.width = changes.width;
                         node.height = changes.height;
-                    }
-
-                    // Apply border color
-                    if (
-                        changes.borderColor !== undefined &&
-                        typeof node.setBorderColor === "function"
-                    ) {
-                        console.log("Applying borderColor via setBorderColor");
-                        node.setBorderColor(changes.borderColor);
-                    }
-
-                    // Apply background color
-                    if (
-                        changes.backgroundColor !== undefined &&
-                        typeof node.setBackgroundColor === "function"
-                    ) {
-                        console.log(
-                            "Applying backgroundColor via setBackgroundColor",
-                        );
-                        node.setBackgroundColor(changes.backgroundColor);
                     }
 
                     // Try to update the node's visual representation if needed
@@ -669,8 +609,6 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                     width: node.width,
                     height: node.height,
                     color: node.color,
-                    borderColor: node.borderColor,
-                    backgroundColor: node.backgroundColor,
                 };
             }
 
@@ -685,8 +623,6 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                     width: node.bbox.width,
                     height: node.bbox.height,
                     color: node.color,
-                    borderColor: node.borderColor,
-                    backgroundColor: node.backgroundColor,
                 };
             }
 
