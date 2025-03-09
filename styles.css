@@ -33,8 +33,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     margin: 0;
     padding: 0;
     background-color: transparent;
@@ -49,6 +49,12 @@
 }
 
 .format-brush-menu-item svg {
-    width: 16px;
-    height: 16px;
+    width: 24px;
+    height: 24px;
+}
+
+.format-brush-menu-item svg.svg-icon.lucide-brush {
+    width: 24px !important;
+    height: 24px !important;
+    stroke-width: 1.5px;
 }
