@@ -6,6 +6,7 @@ import {
     setIcon,
     Events,
     setTooltip,
+    addIcon,
 } from "obsidian";
 import { SettingsTab } from "./settingsTab";
 import { CanvasFormatBrushSettings, DEFAULT_SETTINGS } from "./settings";
@@ -189,49 +190,16 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             },
         });
 
-        // Register context menu event for file menu (which includes canvas menus)
-        this.registerEvent(
-            this.app.workspace.on(
-                "file-menu",
-                (menu: Menu, file: any, source: string) => {
-                    console.log("File menu event - Source:", source);
+        // Patch the canvas popup menu
+        this.patchCanvasPopupMenu();
 
-                    // Only add menu items if we're in a canvas view with a selection
-                    // and we're not using the patched popup menu approach
-                    const canvasView = this.getActiveCanvasView();
-                    if (
-                        canvasView &&
-                        source === "canvas-menu" &&
-                        canvasView.canvas.selection.size > 0 &&
-                        !this.patchedPopupMenu // Skip if we're already using the patched popup menu to avoid duplicates
-                    ) {
-                        console.log(
-                            "Adding canvas format brush menu items via file-menu event",
-                        );
+        // Initialize status bar
+        this.initStatusBar();
 
-                        // Add separator
-                        menu.addSeparator();
-
-                        // Add format brush button
-                        menu.addItem((item) => {
-                            item.setTitle("Format brush")
-                                .setIcon("brush")
-                                .onClick(() => {
-                                    // Create a fake event at the center of the screen for the submenu
-                                    const event = new MouseEvent("click", {
-                                        clientX: window.innerWidth / 2,
-                                        clientY: window.innerHeight / 2,
-                                    });
-                                    this.showFormatBrushSubmenu(
-                                        event,
-                                        canvasView,
-                                    );
-                                });
-                        });
-                    }
-                },
-            ),
-        );
+        // Register for layout-ready event to set up format brush buttons when Obsidian is ready
+        this.app.workspace.onLayoutReady(() => {
+            this.patchCanvasPopupMenu();
+        });
 
         // Register event for active leaf change to update UI
         this.registerEvent(
@@ -247,7 +215,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                         console.log("Active leaf changed to canvas view");
                         this.updateStatusBar();
 
-                        // Patch the canvas popup menu
+                        // Ensure popup menu is patched when switching to a canvas
                         this.patchCanvasPopupMenu();
                     } else {
                         // Hide status bar if not in canvas view
@@ -258,14 +226,6 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 },
             ),
         );
-
-        // Initialize status bar
-        this.initStatusBar();
-
-        // Register for layout-ready event to set up format brush buttons when Obsidian is ready
-        this.app.workspace.onLayoutReady(() => {
-            this.patchCanvasPopupMenu();
-        });
     }
 
     onunload() {
@@ -278,137 +238,129 @@ export default class CanvasFormatBrushPlugin extends Plugin {
     // Patch the canvas popup menu to add our format brush buttons
     patchCanvasPopupMenu() {
         try {
-            const canvasView = this.getActiveCanvasView();
-            if (!canvasView || !canvasView.canvas || !canvasView.canvas.menu) {
-                console.log("No canvas view or menu found to patch");
-                return;
-            }
-
             // Only patch once
             if (this.patchedPopupMenu) {
                 console.log("Canvas popup menu already patched");
                 return;
             }
 
-            console.log("Patching canvas popup menu");
+            console.log("Setting up canvas context menu integration");
 
-            // Store original render method
-            const originalRender = canvasView.canvas.menu.render;
-
-            // Override the render method to add our buttons
-            const plugin = this;
-            canvasView.canvas.menu.render = function () {
-                try {
-                    // Call the original render method first to preserve all original menu items
-                    originalRender.call(this);
-
-                    // Now add our format brush button to the popup menu
-                    if (this.menuEl) {
-                        const menuEl = this.menuEl;
-
-                        // Remove any existing format brush buttons to prevent duplicates
-                        const existingButtons = menuEl.querySelectorAll(
-                            ".canvas-format-brush-container",
-                        );
-                        existingButtons.forEach((btn: Element) => btn.remove());
-
-                        // Create a separator
-                        const separator = document.createElement("div");
-                        separator.addClass("canvas-menu-separator");
-                        menuEl.appendChild(separator);
-
-                        // Create a container for our button
-                        const container = document.createElement("div");
-                        container.addClass("canvas-format-brush-container");
-                        container.style.display = "flex";
-                        container.style.justifyContent = "center";
-                        container.style.padding = "4px 0";
-                        menuEl.appendChild(container);
-
-                        // Create the main format brush button
-                        const formatBrushButton = plugin.createPopupButton(
-                            "Format brush",
-                            "brush", // Using a brush icon to differentiate from Obsidian's icons
-                            (e) => {
-                                // Stop propagation to prevent menu from closing
-                                e.stopPropagation();
-
-                                // Create and show a submenu
-                                plugin.showFormatBrushSubmenu(e, canvasView);
-                            },
-                        );
-
-                        container.appendChild(formatBrushButton);
-                    }
-                } catch (error) {
-                    console.error("Error in patched render method:", error);
-                    // Fall back to original render if our patch fails
-                    originalRender.call(this);
+            // We need to wait for a canvas view to be active
+            const patchMenu = () => {
+                // Get the active canvas view
+                const canvasView = this.getActiveCanvasView();
+                if (!canvasView) {
+                    console.log(
+                        "No active canvas view found, will try again later",
+                    );
+                    return false;
                 }
+
+                // Access the canvas instance
+                const canvas = canvasView.canvas;
+                if (!canvas || !canvas.menu) {
+                    console.log(
+                        "Canvas or menu not found, will try again later",
+                    );
+                    return false;
+                }
+
+                const canvasMenu = canvas.menu;
+
+                // We need to patch the render method of the canvas menu
+                const originalRender = canvasMenu.render;
+
+                // Override the render method
+                canvasMenu.render = (...args: any[]) => {
+                    // Call the original render method first to ensure all default menu items are rendered
+                    const result = originalRender.apply(canvasMenu, args);
+
+                    console.log(
+                        "Canvas menu render called, adding format brush button",
+                    );
+
+                    // Now add our custom button to the menu element
+                    if (canvasMenu.menuEl) {
+                        // Check if our button already exists to avoid duplicates
+                        if (
+                            !canvasMenu.menuEl.querySelector(
+                                ".format-brush-menu-item",
+                            )
+                        ) {
+                            // Create our format brush button
+                            const buttonEl = document.createElement("button");
+                            buttonEl.addClass(
+                                "clickable-icon",
+                                "format-brush-menu-item",
+                            );
+
+                            // Set the tooltip
+                            setTooltip(buttonEl, "Format brush", {
+                                placement: "top",
+                            });
+
+                            // Set the icon
+                            setIcon(buttonEl, "brush");
+
+                            // Add click event handler
+                            buttonEl.addEventListener(
+                                "click",
+                                (evt: MouseEvent) => {
+                                    evt.preventDefault();
+                                    evt.stopPropagation();
+
+                                    // Show format brush submenu
+                                    this.showFormatBrushSubmenu(
+                                        evt,
+                                        canvasView,
+                                    );
+                                },
+                            );
+
+                            // Add the button to the menu
+                            canvasMenu.menuEl.appendChild(buttonEl);
+                            console.log(
+                                "Format brush button added to canvas menu",
+                            );
+                        }
+                    }
+
+                    return result;
+                };
+
+                // Force a render to make our button appear immediately
+                if (typeof canvasMenu.render === "function") {
+                    canvasMenu.render();
+                }
+
+                this.patchedPopupMenu = true;
+                console.log(
+                    "Canvas context menu integration set up successfully",
+                );
+
+                return true;
             };
 
-            this.patchedPopupMenu = true;
-            console.log("Canvas popup menu patched successfully");
+            // Try to patch the menu now
+            if (!patchMenu()) {
+                // If we couldn't patch it now, register for layout-change events
+                // to try again when the layout changes (which might make a canvas active)
+                const evt = this.app.workspace.on("layout-change", () => {
+                    if (patchMenu()) {
+                        // If we succeeded, unregister this event
+                        this.app.workspace.offref(evt);
+                    }
+                });
+
+                this.registerEvent(evt);
+            }
         } catch (error) {
-            console.error("Error patching canvas popup menu:", error);
+            console.error(
+                "Error setting up canvas context menu integration:",
+                error,
+            );
         }
-    }
-
-    // Show a submenu with format brush options
-    showFormatBrushSubmenu(event: MouseEvent, canvasView: CanvasView) {
-        // Create a new menu
-        const menu = new Menu();
-
-        // Only show copy options if one node is selected
-        const hasSingleSelection = canvasView.canvas.selection.size === 1;
-
-        if (hasSingleSelection) {
-            // Copy all format option
-            menu.addItem((item) => {
-                item.setTitle("Copy format (all)")
-                    .setIcon("clipboard-copy")
-                    .onClick(() => {
-                        // Use the command's functionality directly
-                        this.copyFormat(canvasView);
-                    });
-            });
-
-            // Copy color only option
-            menu.addItem((item) => {
-                item.setTitle("Copy color only")
-                    .setIcon("palette")
-                    .onClick(() => {
-                        // Use the command's functionality directly
-                        this.copyFormatColorOnly(canvasView);
-                    });
-            });
-
-            // Copy size only option
-            menu.addItem((item) => {
-                item.setTitle("Copy size only")
-                    .setIcon("expand")
-                    .onClick(() => {
-                        // Use the command's functionality directly
-                        this.copyFormatSizeOnly(canvasView);
-                    });
-            });
-        }
-
-        // Add paste button if we have a copied format
-        if (this.copiedFormat) {
-            // Paste format option
-            menu.addItem((item) => {
-                item.setTitle("Paste format")
-                    .setIcon("clipboard-paste")
-                    .onClick(() => {
-                        // Use the command's functionality directly
-                        this.pasteFormat(canvasView);
-                    });
-            });
-        }
-
-        // Show the menu at the event position
-        menu.showAtPosition({ x: event.clientX, y: event.clientY });
     }
 
     getActiveCanvasView(): CanvasView | null {
@@ -1056,5 +1008,62 @@ export default class CanvasFormatBrushPlugin extends Plugin {
         });
 
         return button;
+    }
+
+    // Show a submenu with format brush options
+    showFormatBrushSubmenu(event: MouseEvent, canvasView: CanvasView) {
+        // Create a new menu
+        const menu = new Menu();
+
+        // Only show copy options if one node is selected
+        const hasSingleSelection = canvasView.canvas.selection.size === 1;
+
+        if (hasSingleSelection) {
+            // Copy all format option
+            menu.addItem((item) => {
+                item.setTitle("Copy format (all)")
+                    .setIcon("clipboard-copy")
+                    .onClick(() => {
+                        // Use the command's functionality directly
+                        this.copyFormat(canvasView);
+                    });
+            });
+
+            // Copy color only option
+            menu.addItem((item) => {
+                item.setTitle("Copy color only")
+                    .setIcon("palette")
+                    .onClick(() => {
+                        // Use the command's functionality directly
+                        this.copyFormatColorOnly(canvasView);
+                    });
+            });
+
+            // Copy size only option
+            menu.addItem((item) => {
+                item.setTitle("Copy size only")
+                    .setIcon("expand")
+                    .onClick(() => {
+                        // Use the command's functionality directly
+                        this.copyFormatSizeOnly(canvasView);
+                    });
+            });
+        }
+
+        // Add paste button if we have a copied format
+        if (this.copiedFormat) {
+            // Paste format option
+            menu.addItem((item) => {
+                item.setTitle("Paste format")
+                    .setIcon("clipboard-paste")
+                    .onClick(() => {
+                        // Use the command's functionality directly
+                        this.pasteFormat(canvasView);
+                    });
+            });
+        }
+
+        // Show the menu at the event position
+        menu.showAtPosition({ x: event.clientX, y: event.clientY });
     }
 }

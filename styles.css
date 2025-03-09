@@ -27,3 +27,28 @@
     border-radius: 3px;
     border: 1px solid var(--background-modifier-border);
 }
+
+/* Canvas context menu button styles */
+.format-brush-menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text-normal);
+}
+
+.format-brush-menu-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.format-brush-menu-item svg {
+    width: 16px;
+    height: 16px;
+}
