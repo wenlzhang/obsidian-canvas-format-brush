@@ -100,6 +100,42 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             },
         });
 
+        // Add command to copy only the color
+        this.addCommand({
+            id: "copy-canvas-color-only",
+            name: "Copy only color from selected canvas element",
+            checkCallback: (checking: boolean) => {
+                const canvasView = this.getActiveCanvasView();
+
+                if (canvasView && canvasView.canvas.selection.size === 1) {
+                    if (!checking) {
+                        // Call a specialized version of copyFormat that only copies color
+                        this.copyFormatColorOnly(canvasView);
+                    }
+                    return true;
+                }
+                return false;
+            },
+        });
+
+        // Add command to copy only the size
+        this.addCommand({
+            id: "copy-canvas-size-only",
+            name: "Copy only size from selected canvas element",
+            checkCallback: (checking: boolean) => {
+                const canvasView = this.getActiveCanvasView();
+
+                if (canvasView && canvasView.canvas.selection.size === 1) {
+                    if (!checking) {
+                        // Call a specialized version of copyFormat that only copies size
+                        this.copyFormatSizeOnly(canvasView);
+                    }
+                    return true;
+                }
+                return false;
+            },
+        });
+
         this.addCommand({
             id: "paste-canvas-format",
             name: "Paste format to selected canvas elements",
@@ -152,8 +188,27 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                             menu.addItem((item) => {
                                 item.setTitle("Copy format")
                                     .setIcon("clipboard-copy")
-                                    .onClick(() => this.copyFormat(canvasView))
-                                    .setSection("canvas-format-brush");
+                                    .onClick(() => {
+                                        this.copyFormat(canvasView);
+                                    });
+                            });
+
+                            // Add copy color only option
+                            menu.addItem((item) => {
+                                item.setTitle("Copy only color")
+                                    .setIcon("palette")
+                                    .onClick(() => {
+                                        this.copyFormatColorOnly(canvasView);
+                                    });
+                            });
+
+                            // Add copy size only option
+                            menu.addItem((item) => {
+                                item.setTitle("Copy only size")
+                                    .setIcon("expand")
+                                    .onClick(() => {
+                                        this.copyFormatSizeOnly(canvasView);
+                                    });
                             });
                         }
 
@@ -297,6 +352,95 @@ export default class CanvasFormatBrushPlugin extends Plugin {
         } catch (error) {
             console.error("Error in copyFormatFromNode:", error);
             new Notice("Error copying format");
+        }
+    }
+
+    copyFormatColorOnlyFromNode(node: any) {
+        console.log("copyFormatColorOnlyFromNode called with node:", !!node);
+
+        try {
+            // Log node structure for debugging
+            if (node) {
+                console.log("Node type:", typeof node);
+                console.log(
+                    "Node constructor name:",
+                    node.constructor ? node.constructor.name : "Unknown",
+                );
+                console.log("Node properties:", Object.keys(node));
+                console.log("Node ID:", node.id);
+
+                // Check for specific type of node
+                if (node.text !== undefined) {
+                    console.log("Node appears to be a text node");
+                }
+            }
+
+            // Make a clean copy of just what we need
+            this.copiedFormat = {};
+
+            // We'll copy directly from node properties to avoid data structure issues
+            if (this.settings.copyColor && node.color !== undefined) {
+                console.log("Copying color:", node.color);
+                this.copiedFormat.color = String(node.color);
+            }
+
+            console.log("Copied format:", this.copiedFormat);
+
+            // Show a notice
+            new Notice("Color copied from canvas element");
+
+            // Update status bar
+            this.updateStatusBar();
+        } catch (error) {
+            console.error("Error in copyFormatColorOnlyFromNode:", error);
+            new Notice("Error copying color");
+        }
+    }
+
+    copyFormatSizeOnlyFromNode(node: any) {
+        console.log("copyFormatSizeOnlyFromNode called with node:", !!node);
+
+        try {
+            // Log node structure for debugging
+            if (node) {
+                console.log("Node type:", typeof node);
+                console.log(
+                    "Node constructor name:",
+                    node.constructor ? node.constructor.name : "Unknown",
+                );
+                console.log("Node properties:", Object.keys(node));
+                console.log("Node ID:", node.id);
+
+                // Check for specific type of node
+                if (node.text !== undefined) {
+                    console.log("Node appears to be a text node");
+                }
+            }
+
+            // Make a clean copy of just what we need
+            this.copiedFormat = {};
+
+            // We'll copy directly from node properties to avoid data structure issues
+            if (
+                this.settings.copySize &&
+                node.width !== undefined &&
+                node.height !== undefined
+            ) {
+                console.log("Copying size:", node.width, "x", node.height);
+                this.copiedFormat.width = Number(node.width);
+                this.copiedFormat.height = Number(node.height);
+            }
+
+            console.log("Copied format:", this.copiedFormat);
+
+            // Show a notice
+            new Notice("Size copied from canvas element");
+
+            // Update status bar
+            this.updateStatusBar();
+        } catch (error) {
+            console.error("Error in copyFormatSizeOnlyFromNode:", error);
+            new Notice("Error copying size");
         }
     }
 
@@ -493,6 +637,68 @@ export default class CanvasFormatBrushPlugin extends Plugin {
         } catch (error) {
             console.error("Error copying format:", error);
             new Notice("Error copying format. Please try again.");
+        }
+    }
+
+    copyFormatColorOnly(canvasView: CanvasView) {
+        try {
+            console.log("copyFormatColorOnly called");
+
+            // Get the selected node
+            const selectedElements = Array.from(canvasView.canvas.selection);
+            console.log("Selected elements:", selectedElements);
+
+            if (selectedElements.length === 0) {
+                console.log("No elements selected");
+                new Notice("No canvas element selected");
+                return;
+            }
+
+            // The selection is the actual node object, not just an ID
+            const selectedNode = selectedElements[0];
+            console.log("Selected node type:", typeof selectedNode);
+
+            if (!selectedNode) {
+                console.log("Selected node is null");
+                new Notice("No canvas element selected");
+                return;
+            }
+
+            this.copyFormatColorOnlyFromNode(selectedNode);
+        } catch (error) {
+            console.error("Error copying color:", error);
+            new Notice("Error copying color. Please try again.");
+        }
+    }
+
+    copyFormatSizeOnly(canvasView: CanvasView) {
+        try {
+            console.log("copyFormatSizeOnly called");
+
+            // Get the selected node
+            const selectedElements = Array.from(canvasView.canvas.selection);
+            console.log("Selected elements:", selectedElements);
+
+            if (selectedElements.length === 0) {
+                console.log("No elements selected");
+                new Notice("No canvas element selected");
+                return;
+            }
+
+            // The selection is the actual node object, not just an ID
+            const selectedNode = selectedElements[0];
+            console.log("Selected node type:", typeof selectedNode);
+
+            if (!selectedNode) {
+                console.log("Selected node is null");
+                new Notice("No canvas element selected");
+                return;
+            }
+
+            this.copyFormatSizeOnlyFromNode(selectedNode);
+        } catch (error) {
+            console.error("Error copying size:", error);
+            new Notice("Error copying size. Please try again.");
         }
     }
 
