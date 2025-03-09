@@ -95,7 +95,7 @@
     height: 1px;
     background-color: var(--background-modifier-border);
     margin: 4px 6px;
-    opacity: 0.6;
+    opacity: 1;
 }
 
 .format-brush-custom-icon {
