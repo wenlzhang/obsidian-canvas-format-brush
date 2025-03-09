@@ -4,6 +4,8 @@
 
 An [Obsidian](https://obsidian.md/) plugin that allows you to copy and paste formatting attributes (size and color) between canvas elements, similar to the format painter in Word.
 
+![demo](/docs/attachment/demo.gif)
+
 ## Features
 
 - Copy and paste formatting between canvas elements
