@@ -90,7 +90,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
         // Register commands
         this.addCommand({
             id: "copy-canvas-format",
-            name: "Copy format from selected canvas element",
+            name: "Copy format",
             checkCallback: (checking: boolean) => {
                 const canvasView = this.getActiveCanvasView();
                 console.log("Copy command check - Canvas view:", !!canvasView);
@@ -126,28 +126,10 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             },
         });
 
-        // Add command to copy only the color
-        this.addCommand({
-            id: "copy-canvas-color",
-            name: "Copy color from selected canvas element",
-            checkCallback: (checking: boolean) => {
-                const canvasView = this.getActiveCanvasView();
-
-                if (canvasView && canvasView.canvas.selection.size === 1) {
-                    if (!checking) {
-                        // Call a specialized version of copyFormat that only copies color
-                        this.copyFormatColorOnly(canvasView);
-                    }
-                    return true;
-                }
-                return false;
-            },
-        });
-
         // Add command to copy only the size
         this.addCommand({
             id: "copy-canvas-size",
-            name: "Copy size from selected canvas element",
+            name: "Copy size",
             checkCallback: (checking: boolean) => {
                 const canvasView = this.getActiveCanvasView();
 
@@ -162,9 +144,27 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             },
         });
 
+        // Add command to copy only the color
+        this.addCommand({
+            id: "copy-canvas-color",
+            name: "Copy color",
+            checkCallback: (checking: boolean) => {
+                const canvasView = this.getActiveCanvasView();
+
+                if (canvasView && canvasView.canvas.selection.size === 1) {
+                    if (!checking) {
+                        // Call a specialized version of copyFormat that only copies color
+                        this.copyFormatColorOnly(canvasView);
+                    }
+                    return true;
+                }
+                return false;
+            },
+        });
+
         this.addCommand({
             id: "paste-canvas-format",
-            name: "Paste format to selected canvas elements",
+            name: "Paste format",
             checkCallback: (checking: boolean) => {
                 const canvasView = this.getActiveCanvasView();
                 console.log("Paste command check - Canvas view:", !!canvasView);
@@ -1029,15 +1029,6 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             );
             customMenu.appendChild(copyAllButton);
 
-            // Copy color only option
-            const copyColorButton = this.createCustomMenuItem(
-                "Copy color",
-                "palette",
-                "copy-color-item",
-                () => this.copyFormatColorOnly(canvasView),
-            );
-            customMenu.appendChild(copyColorButton);
-
             // Copy size only option
             const copySizeButton = this.createCustomMenuItem(
                 "Copy size",
@@ -1046,10 +1037,26 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 () => this.copyFormatSizeOnly(canvasView),
             );
             customMenu.appendChild(copySizeButton);
+
+            // Copy color only option
+            const copyColorButton = this.createCustomMenuItem(
+                "Copy color",
+                "palette",
+                "copy-color-item",
+                () => this.copyFormatColorOnly(canvasView),
+            );
+            customMenu.appendChild(copyColorButton);
         }
 
         // Add paste button if we have a copied format
         if (this.copiedFormat) {
+            // Add a separator if we also have copy options
+            if (hasSingleSelection) {
+                const separator = document.createElement("div");
+                separator.addClass("format-brush-menu-separator");
+                customMenu.appendChild(separator);
+            }
+
             const pasteButton = this.createCustomMenuItem(
                 "Paste format",
                 "clipboard-paste",

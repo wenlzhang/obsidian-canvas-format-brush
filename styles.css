@@ -90,6 +90,14 @@
     background-color: var(--background-modifier-hover);
 }
 
+/* Menu separator styling */
+.format-brush-menu-separator {
+    height: 1px;
+    background-color: var(--background-modifier-border);
+    margin: 4px 6px;
+    opacity: 0.6;
+}
+
 .format-brush-custom-icon {
     display: flex;
     align-items: center;
