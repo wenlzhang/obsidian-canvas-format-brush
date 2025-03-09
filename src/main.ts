@@ -1,4 +1,4 @@
-import { Plugin, WorkspaceLeaf, Menu, Notice, setIcon, Events } from "obsidian";
+import { Plugin, WorkspaceLeaf, Menu, Notice, setIcon, Events, setTooltip } from "obsidian";
 import { SettingsTab } from "./settingsTab";
 import { CanvasFormatBrushSettings, DEFAULT_SETTINGS } from "./settings";
 
@@ -19,16 +19,14 @@ interface CanvasNode {
     width: number;
     height: number;
     color?: string;
-    // Methods that might be available
     setColor?: (color: string) => void;
     setDimensions?: (width: number, height: number) => void;
-    // Data property that might contain the actual node data
     data?: CanvasNodeData;
 }
 
 interface Canvas {
     nodes: Map<string, CanvasNode>;
-    selection: Set<any>; // Changed from Set<string> to Set<any> to handle object selections
+    selection: Set<any>;
     requestSave: () => void;
     getData?: () => any;
     getElement?: (id: string) => CanvasNode;
@@ -38,12 +36,22 @@ interface Canvas {
     render?: () => void;
     requestPushHistory?: () => void;
     dirty?: boolean;
+    menu?: CanvasPopupMenu;
 }
 
 interface CanvasView {
     canvas: Canvas;
     menu?: Menu;
     getViewType: () => string;
+}
+
+// Interface for the canvas popup menu
+interface CanvasPopupMenu {
+    menuEl?: HTMLElement;
+    render: () => void;
+    hide: () => void;
+    show: () => void;
+    setTarget: (node: CanvasNode) => void;
 }
 
 export default class CanvasFormatBrushPlugin extends Plugin {
@@ -54,6 +62,15 @@ export default class CanvasFormatBrushPlugin extends Plugin {
         width?: number;
         height?: number;
     } | null = null;
+    
+    // Track if we've patched the popup menu
+    patchedPopupMenu: boolean = false;
+    
+    // Elements for the format brush buttons in popup menu
+    copyFormatButton: HTMLElement | null = null;
+    copyColorButton: HTMLElement | null = null;
+    copySizeButton: HTMLElement | null = null;
+    pasteFormatButton: HTMLElement | null = null;
 
     async onload() {
         await this.loadSettings();
@@ -106,7 +123,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             name: "Copy color from selected canvas element",
             checkCallback: (checking: boolean) => {
                 const canvasView = this.getActiveCanvasView();
-
+                
                 if (canvasView && canvasView.canvas.selection.size === 1) {
                     if (!checking) {
                         // Call a specialized version of copyFormat that only copies color
@@ -124,7 +141,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             name: "Copy size from selected canvas element",
             checkCallback: (checking: boolean) => {
                 const canvasView = this.getActiveCanvasView();
-
+                
                 if (canvasView && canvasView.canvas.selection.size === 1) {
                     if (!checking) {
                         // Call a specialized version of copyFormat that only copies size
@@ -226,7 +243,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             ),
         );
 
-        // Register status bar
+        // Register event for active leaf change to update UI
         this.registerEvent(
             this.app.workspace.on(
                 "active-leaf-change",
@@ -239,6 +256,9 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                     ) {
                         console.log("Active leaf changed to canvas view");
                         this.updateStatusBar();
+                        
+                        // Patch the canvas popup menu
+                        this.patchCanvasPopupMenu();
                     } else {
                         // Hide status bar if not in canvas view
                         if (this.statusBarItem) {
@@ -252,28 +272,151 @@ export default class CanvasFormatBrushPlugin extends Plugin {
         // Initialize status bar
         this.initStatusBar();
 
-        // Log that plugin is loaded
-        console.log("Canvas Format Brush plugin loaded");
+        // Register for layout-ready event to set up format brush buttons when Obsidian is ready
+        this.app.workspace.onLayoutReady(() => {
+            this.patchCanvasPopupMenu();
+        });
     }
 
     onunload() {
-        // Clean up status bar
         if (this.statusBarItem) {
             this.statusBarItem.remove();
         }
         console.log("Canvas Format Brush plugin unloaded");
     }
 
-    async loadSettings() {
-        this.settings = Object.assign(
-            {},
-            DEFAULT_SETTINGS,
-            await this.loadData(),
-        );
-    }
+    // Patch the canvas popup menu to add our format brush buttons
+    patchCanvasPopupMenu() {
+        try {
+            const canvasView = this.getActiveCanvasView();
+            if (!canvasView || !canvasView.canvas || !canvasView.canvas.menu) {
+                console.log("No canvas view or menu found to patch");
+                return;
+            }
 
-    async saveSettings() {
-        await this.saveData(this.settings);
+            // Only patch once
+            if (this.patchedPopupMenu) {
+                console.log("Canvas popup menu already patched");
+                return;
+            }
+
+            console.log("Patching canvas popup menu");
+            
+            // Store original render method
+            const originalRender = canvasView.canvas.menu.render;
+            
+            // Override the render method to add our buttons
+            canvasView.canvas.menu.render = () => {
+                // Call the original render method first
+                originalRender.call(canvasView.canvas.menu);
+                
+                // Now add our buttons to the popup menu
+                this.addButtonsToPopupMenu(canvasView);
+            };
+            
+            this.patchedPopupMenu = true;
+            console.log("Canvas popup menu patched successfully");
+            
+        } catch (error) {
+            console.error("Error patching canvas popup menu:", error);
+        }
+    }
+    
+    // Add format brush buttons to the canvas popup menu
+    addButtonsToPopupMenu(canvasView: CanvasView) {
+        try {
+            if (!canvasView.canvas.menu || !canvasView.canvas.menu.menuEl) {
+                console.log("No menu element found");
+                return;
+            }
+            
+            const menuEl = canvasView.canvas.menu.menuEl;
+            
+            // Create a separator
+            const separator = document.createElement("div");
+            separator.addClass("canvas-menu-separator");
+            menuEl.appendChild(separator);
+            
+            // Create a container for our buttons
+            const container = document.createElement("div");
+            container.addClass("canvas-format-brush-buttons");
+            container.style.display = "flex";
+            container.style.justifyContent = "center";
+            container.style.gap = "8px";
+            container.style.padding = "4px 0";
+            menuEl.appendChild(container);
+            
+            // Only show copy buttons if one node is selected
+            const hasSingleSelection = canvasView.canvas.selection.size === 1;
+            
+            if (hasSingleSelection) {
+                // Copy format button
+                this.copyFormatButton = this.createPopupButton(
+                    "Copy format",
+                    "clipboard-copy",
+                    () => {
+                        this.copyFormat(canvasView);
+                    }
+                );
+                container.appendChild(this.copyFormatButton);
+                
+                // Copy color button
+                this.copyColorButton = this.createPopupButton(
+                    "Copy color",
+                    "palette",
+                    () => {
+                        this.copyFormatColorOnly(canvasView);
+                    }
+                );
+                container.appendChild(this.copyColorButton);
+                
+                // Copy size button
+                this.copySizeButton = this.createPopupButton(
+                    "Copy size",
+                    "expand",
+                    () => {
+                        this.copyFormatSizeOnly(canvasView);
+                    }
+                );
+                container.appendChild(this.copySizeButton);
+            }
+            
+            // Add paste button if we have a copied format
+            if (this.copiedFormat) {
+                this.pasteFormatButton = this.createPopupButton(
+                    "Paste format",
+                    "clipboard-paste",
+                    () => {
+                        this.pasteFormat(canvasView);
+                    }
+                );
+                container.appendChild(this.pasteFormatButton);
+            }
+            
+            // If no buttons were added, remove the container
+            if (container.childElementCount === 0) {
+                menuEl.removeChild(separator);
+                menuEl.removeChild(container);
+            }
+            
+        } catch (error) {
+            console.error("Error adding buttons to popup menu:", error);
+        }
+    }
+    
+    // Helper to create a button for the popup menu
+    createPopupButton(title: string, icon: string, clickHandler: () => void): HTMLElement {
+        const button = document.createElement("button");
+        button.addClass("clickable-icon");
+        button.setAttribute("aria-label", title);
+        setIcon(button, icon);
+        setTooltip(button, title);
+        button.addEventListener("click", (e) => {
+            e.stopPropagation(); // Prevent the event from closing the popup
+            clickHandler();
+        });
+        
+        return button;
     }
 
     getActiveCanvasView(): CanvasView | null {
@@ -838,6 +981,18 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             console.error("Error in getNodeData:", error);
             return null;
         }
+    }
+
+    async loadSettings() {
+        this.settings = Object.assign(
+            {},
+            DEFAULT_SETTINGS,
+            await this.loadData(),
+        );
+    }
+
+    async saveSettings() {
+        await this.saveData(this.settings);
     }
 
     initStatusBar() {
