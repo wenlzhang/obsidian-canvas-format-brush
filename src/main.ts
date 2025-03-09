@@ -73,7 +73,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
     } | null = null;
 
     // Track if we've patched the popup menu
-    patchedPopupMenu: boolean = false;
+    patchedPopupMenu = false;
 
     // Elements for the format brush buttons in popup menu
     copyFormatButton: HTMLElement | null = null;
@@ -564,7 +564,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 height?: number;
             }
 
-            let changes: CanvasNodeChanges = {};
+            const changes: CanvasNodeChanges = {};
             let changesMade = false;
 
             if (this.copiedFormat.color !== undefined) {
@@ -589,7 +589,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             console.log("Changes to apply:", changes);
 
             // First, try to use the best available methods
-            let useDirectMethods = true;
+            const useDirectMethods = true;
 
             if (useDirectMethods) {
                 // Try the standard methods first
