@@ -19,10 +19,8 @@ export class SettingsTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
-        containerEl.createEl("h2", { text: "Canvas Format Brush settings" });
-
-        // Format Attributes Section
-        containerEl.createEl("h3", { text: "Format attributes" });
+        // Format Attributes
+        new Setting(this.containerEl).setName("Format attribute").setHeading();
 
         new Setting(containerEl)
             .setName("Copy color")
@@ -48,8 +46,8 @@ export class SettingsTab extends PluginSettingTab {
                     }),
             );
 
-        // UI Settings Section
-        containerEl.createEl("h3", { text: "UI settings" });
+        // UI Settings
+        new Setting(this.containerEl).setName("UI").setHeading();
 
         new Setting(containerEl)
             .setName("Show status bar item")
