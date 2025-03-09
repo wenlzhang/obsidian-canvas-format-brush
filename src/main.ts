@@ -40,6 +40,10 @@ interface Canvas {
     getData?: () => any;
     getElement?: (id: string) => CanvasNode;
     getSelection?: () => any[];
+    // Additional properties observed in the console logs
+    wrapperEl?: HTMLElement;
+    requestFrame?: () => void;
+    render?: () => void;
 }
 
 interface CanvasView {
@@ -360,15 +364,19 @@ export default class CanvasFormatBrushPlugin extends Plugin {
         console.log("Pasting format:", this.copiedFormat);
 
         // Apply only the attributes that were copied
+        let modified = false;
+
         if (this.copiedFormat.color !== undefined) {
             // Try using setter method if available
-            if (node.setColor) {
+            if (typeof node.setColor === "function") {
                 console.log("Using setColor method");
                 node.setColor(this.copiedFormat.color);
+                modified = true;
             } else {
                 // Otherwise, set property directly
                 console.log("Setting color property directly");
                 nodeData.color = this.copiedFormat.color;
+                modified = true;
             }
         }
 
@@ -377,43 +385,63 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             this.copiedFormat.height !== undefined
         ) {
             // Try using setter method if available
-            if (node.setDimensions) {
+            if (typeof node.setDimensions === "function") {
                 console.log("Using setDimensions method");
                 node.setDimensions(
                     this.copiedFormat.width,
                     this.copiedFormat.height,
                 );
+                modified = true;
+            } else if (typeof node.resize === "function") {
+                console.log("Using resize method");
+                node.resize(this.copiedFormat.width, this.copiedFormat.height);
+                modified = true;
             } else {
                 // Otherwise, set properties directly
                 console.log("Setting size properties directly");
                 nodeData.width = this.copiedFormat.width;
                 nodeData.height = this.copiedFormat.height;
+
+                // If node has a bbox property, update that too
+                if (node.bbox) {
+                    console.log("Updating node.bbox");
+                    node.bbox.width = this.copiedFormat.width;
+                    node.bbox.height = this.copiedFormat.height;
+                }
+
+                modified = true;
             }
         }
 
         if (this.copiedFormat.borderColor !== undefined) {
             // Try using setter method if available
-            if (node.setBorderColor) {
+            if (typeof node.setBorderColor === "function") {
                 console.log("Using setBorderColor method");
                 node.setBorderColor(this.copiedFormat.borderColor);
+                modified = true;
             } else {
                 // Otherwise, set property directly
                 console.log("Setting borderColor property directly");
                 nodeData.borderColor = this.copiedFormat.borderColor;
+                modified = true;
             }
         }
 
         if (this.copiedFormat.backgroundColor !== undefined) {
             // Try using setter method if available
-            if (node.setBackgroundColor) {
+            if (typeof node.setBackgroundColor === "function") {
                 console.log("Using setBackgroundColor method");
                 node.setBackgroundColor(this.copiedFormat.backgroundColor);
+                modified = true;
             } else {
                 // Otherwise, set property directly
                 console.log("Setting backgroundColor property directly");
                 nodeData.backgroundColor = this.copiedFormat.backgroundColor;
+                modified = true;
             }
         }
+
+        return modified;
     }
 
     copyFormat(canvasView: CanvasView) {
@@ -470,8 +498,39 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             let modifiedCount = 0;
             for (const node of selectedElements) {
                 if (node) {
-                    this.pasteFormatToNode(node);
-                    modifiedCount++;
+                    const wasModified = this.pasteFormatToNode(node);
+                    if (wasModified) {
+                        modifiedCount++;
+                    }
+
+                    // Try to trigger a node update if the node has an update method
+                    if (typeof node.update === "function") {
+                        console.log("Calling node.update()");
+                        node.update();
+                    }
+
+                    // If the node has a nodeEl, try to force a style update
+                    if (node.nodeEl) {
+                        console.log("Updating node element styles directly");
+                        if (
+                            this.copiedFormat.width !== undefined &&
+                            this.copiedFormat.height !== undefined
+                        ) {
+                            node.nodeEl.style.width = `${this.copiedFormat.width}px`;
+                            node.nodeEl.style.height = `${this.copiedFormat.height}px`;
+                        }
+                        if (this.copiedFormat.color !== undefined) {
+                            node.nodeEl.style.color = this.copiedFormat.color;
+                        }
+                        if (this.copiedFormat.backgroundColor !== undefined) {
+                            node.nodeEl.style.backgroundColor =
+                                this.copiedFormat.backgroundColor;
+                        }
+                        if (this.copiedFormat.borderColor !== undefined) {
+                            node.nodeEl.style.borderColor =
+                                this.copiedFormat.borderColor;
+                        }
+                    }
                 }
             }
 
@@ -482,8 +541,24 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 `Format applied to ${modifiedCount} canvas element${modifiedCount > 1 ? "s" : ""}`,
             );
 
-            // Force canvas to redraw
-            // This is a hack, but it works to refresh the canvas view
+            // Force canvas to redraw by triggering multiple update mechanisms
+
+            // 1. Request save to update the data
+            canvasView.canvas.requestSave();
+
+            // 2. Try to trigger a canvas redraw if methods are available
+            if (typeof canvasView.canvas.requestFrame === "function") {
+                console.log("Calling canvas.requestFrame()");
+                canvasView.canvas.requestFrame();
+            }
+
+            if (typeof canvasView.canvas.render === "function") {
+                console.log("Calling canvas.render()");
+                canvasView.canvas.render();
+            }
+
+            // 3. Force a DOM update by triggering a mousemove event
+            console.log("Dispatching mousemove event to force redraw");
             const event = new MouseEvent("mousemove", {
                 view: window,
                 bubbles: true,
@@ -491,8 +566,12 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             });
             document.dispatchEvent(event);
 
-            // Save changes
-            canvasView.canvas.requestSave();
+            // 4. Try to trigger a canvas resize event which often forces redraw
+            if (canvasView.canvas.wrapperEl) {
+                console.log("Dispatching resize event on canvas wrapper");
+                const resizeEvent = new Event("resize");
+                canvasView.canvas.wrapperEl.dispatchEvent(resizeEvent);
+            }
         } catch (error) {
             console.error("Error pasting format:", error);
             new Notice("Error pasting format. Please try again.");
