@@ -1,4 +1,12 @@
-import { Plugin, WorkspaceLeaf, Menu, Notice, setIcon, Events, setTooltip } from "obsidian";
+import {
+    Plugin,
+    WorkspaceLeaf,
+    Menu,
+    Notice,
+    setIcon,
+    Events,
+    setTooltip,
+} from "obsidian";
 import { SettingsTab } from "./settingsTab";
 import { CanvasFormatBrushSettings, DEFAULT_SETTINGS } from "./settings";
 
@@ -62,10 +70,10 @@ export default class CanvasFormatBrushPlugin extends Plugin {
         width?: number;
         height?: number;
     } | null = null;
-    
+
     // Track if we've patched the popup menu
     patchedPopupMenu: boolean = false;
-    
+
     // Elements for the format brush buttons in popup menu
     copyFormatButton: HTMLElement | null = null;
     copyColorButton: HTMLElement | null = null;
@@ -123,7 +131,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             name: "Copy color from selected canvas element",
             checkCallback: (checking: boolean) => {
                 const canvasView = this.getActiveCanvasView();
-                
+
                 if (canvasView && canvasView.canvas.selection.size === 1) {
                     if (!checking) {
                         // Call a specialized version of copyFormat that only copies color
@@ -141,7 +149,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             name: "Copy size from selected canvas element",
             checkCallback: (checking: boolean) => {
                 const canvasView = this.getActiveCanvasView();
-                
+
                 if (canvasView && canvasView.canvas.selection.size === 1) {
                     if (!checking) {
                         // Call a specialized version of copyFormat that only copies size
@@ -189,13 +197,17 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                     console.log("File menu event - Source:", source);
 
                     // Only add menu items if we're in a canvas view with a selection
+                    // and we're not using the patched popup menu approach
                     const canvasView = this.getActiveCanvasView();
                     if (
                         canvasView &&
                         source === "canvas-menu" &&
-                        canvasView.canvas.selection.size > 0
+                        canvasView.canvas.selection.size > 0 &&
+                        !this.patchedPopupMenu // Skip if we're already using the patched popup menu to avoid duplicates
                     ) {
-                        console.log("Adding canvas format brush menu items");
+                        console.log(
+                            "Adding canvas format brush menu items via file-menu event",
+                        );
 
                         // Add separator
                         menu.addSeparator();
@@ -208,9 +220,12 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                                     // Create a fake event at the center of the screen for the submenu
                                     const event = new MouseEvent("click", {
                                         clientX: window.innerWidth / 2,
-                                        clientY: window.innerHeight / 2
+                                        clientY: window.innerHeight / 2,
                                     });
-                                    this.showFormatBrushSubmenu(event, canvasView);
+                                    this.showFormatBrushSubmenu(
+                                        event,
+                                        canvasView,
+                                    );
                                 });
                         });
                     }
@@ -231,7 +246,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                     ) {
                         console.log("Active leaf changed to canvas view");
                         this.updateStatusBar();
-                        
+
                         // Patch the canvas popup menu
                         this.patchCanvasPopupMenu();
                     } else {
@@ -276,180 +291,124 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             }
 
             console.log("Patching canvas popup menu");
-            
+
             // Store original render method
             const originalRender = canvasView.canvas.menu.render;
-            
+
             // Override the render method to add our buttons
             const plugin = this;
-            canvasView.canvas.menu.render = function() {
-                // Call the original render method first to preserve all original menu items
-                originalRender.call(this);
-                
-                // Now add our format brush button to the popup menu
-                plugin.addFormatBrushToPopupMenu(canvasView, this);
+            canvasView.canvas.menu.render = function () {
+                try {
+                    // Call the original render method first to preserve all original menu items
+                    originalRender.call(this);
+
+                    // Now add our format brush button to the popup menu
+                    if (this.menuEl) {
+                        const menuEl = this.menuEl;
+
+                        // Remove any existing format brush buttons to prevent duplicates
+                        const existingButtons = menuEl.querySelectorAll(
+                            ".canvas-format-brush-container",
+                        );
+                        existingButtons.forEach((btn: Element) => btn.remove());
+
+                        // Create a separator
+                        const separator = document.createElement("div");
+                        separator.addClass("canvas-menu-separator");
+                        menuEl.appendChild(separator);
+
+                        // Create a container for our button
+                        const container = document.createElement("div");
+                        container.addClass("canvas-format-brush-container");
+                        container.style.display = "flex";
+                        container.style.justifyContent = "center";
+                        container.style.padding = "4px 0";
+                        menuEl.appendChild(container);
+
+                        // Create the main format brush button
+                        const formatBrushButton = plugin.createPopupButton(
+                            "Format brush",
+                            "brush", // Using a brush icon to differentiate from Obsidian's icons
+                            (e) => {
+                                // Stop propagation to prevent menu from closing
+                                e.stopPropagation();
+
+                                // Create and show a submenu
+                                plugin.showFormatBrushSubmenu(e, canvasView);
+                            },
+                        );
+
+                        container.appendChild(formatBrushButton);
+                    }
+                } catch (error) {
+                    console.error("Error in patched render method:", error);
+                    // Fall back to original render if our patch fails
+                    originalRender.call(this);
+                }
             };
-            
+
             this.patchedPopupMenu = true;
             console.log("Canvas popup menu patched successfully");
-            
         } catch (error) {
             console.error("Error patching canvas popup menu:", error);
         }
     }
-    
-    // Add format brush button to the canvas popup menu
-    addFormatBrushToPopupMenu(canvasView: CanvasView, popupMenu: CanvasPopupMenu) {
-        try {
-            if (!popupMenu.menuEl) {
-                console.log("No menu element found");
-                return;
-            }
-            
-            const menuEl = popupMenu.menuEl;
-            
-            // Create a separator
-            const separator = document.createElement("div");
-            separator.addClass("canvas-menu-separator");
-            menuEl.appendChild(separator);
-            
-            // Create a container for our button
-            const container = document.createElement("div");
-            container.addClass("canvas-format-brush-container");
-            container.style.display = "flex";
-            container.style.justifyContent = "center";
-            container.style.padding = "4px 0";
-            menuEl.appendChild(container);
-            
-            // Create the main format brush button
-            const formatBrushButton = this.createPopupButton(
-                "Format brush",
-                "brush", // Using a brush icon to differentiate from Obsidian's icons
-                (e) => {
-                    // Stop propagation to prevent menu from closing
-                    e.stopPropagation();
-                    
-                    // Create and show a submenu
-                    this.showFormatBrushSubmenu(e, canvasView);
-                }
-            );
-            
-            container.appendChild(formatBrushButton);
-        } catch (error) {
-            console.error("Error adding format brush to popup menu:", error);
-        }
-    }
-    
+
     // Show a submenu with format brush options
     showFormatBrushSubmenu(event: MouseEvent, canvasView: CanvasView) {
         // Create a new menu
         const menu = new Menu();
-        
+
         // Only show copy options if one node is selected
         const hasSingleSelection = canvasView.canvas.selection.size === 1;
-        
+
         if (hasSingleSelection) {
-            // Copy format option
+            // Copy all format option
             menu.addItem((item) => {
-                item.setTitle("Copy format")
+                item.setTitle("Copy format (all)")
                     .setIcon("clipboard-copy")
                     .onClick(() => {
+                        // Use the command's functionality directly
                         this.copyFormat(canvasView);
                     });
             });
-            
-            // Copy color option
+
+            // Copy color only option
             menu.addItem((item) => {
-                item.setTitle("Copy color")
-                    .setIcon("color-wheel") // Using a different icon than Obsidian's palette
+                item.setTitle("Copy color only")
+                    .setIcon("palette")
                     .onClick(() => {
+                        // Use the command's functionality directly
                         this.copyFormatColorOnly(canvasView);
                     });
             });
-            
-            // Copy size option
+
+            // Copy size only option
             menu.addItem((item) => {
-                item.setTitle("Copy size")
+                item.setTitle("Copy size only")
                     .setIcon("expand")
                     .onClick(() => {
+                        // Use the command's functionality directly
                         this.copyFormatSizeOnly(canvasView);
                     });
             });
         }
-        
+
         // Add paste button if we have a copied format
         if (this.copiedFormat) {
-            // Add a separator if we added copy options
-            if (hasSingleSelection) {
-                menu.addSeparator();
-            }
-            
             // Paste format option
             menu.addItem((item) => {
                 item.setTitle("Paste format")
                     .setIcon("clipboard-paste")
                     .onClick(() => {
+                        // Use the command's functionality directly
                         this.pasteFormat(canvasView);
                     });
             });
-            
-            // If we have color, add paste color option
-            if (this.copiedFormat.color !== undefined) {
-                menu.addItem((item) => {
-                    item.setTitle("Paste color only")
-                        .setIcon("color-wheel")
-                        .onClick(() => {
-                            // Create a temporary format with only color
-                            const originalFormat = this.copiedFormat;
-                            const tempFormat = { color: originalFormat?.color };
-                            
-                            // Swap, paste, and restore
-                            this.copiedFormat = tempFormat;
-                            this.pasteFormat(canvasView);
-                            this.copiedFormat = originalFormat;
-                        });
-                });
-            }
-            
-            // If we have size, add paste size option
-            if (this.copiedFormat.width !== undefined && this.copiedFormat.height !== undefined) {
-                menu.addItem((item) => {
-                    item.setTitle("Paste size only")
-                        .setIcon("expand")
-                        .onClick(() => {
-                            // Create a temporary format with only size
-                            const originalFormat = this.copiedFormat;
-                            const tempFormat = { 
-                                width: originalFormat?.width,
-                                height: originalFormat?.height
-                            };
-                            
-                            // Swap, paste, and restore
-                            this.copiedFormat = tempFormat;
-                            this.pasteFormat(canvasView);
-                            this.copiedFormat = originalFormat;
-                        });
-                });
-            }
         }
-        
+
         // Show the menu at the event position
         menu.showAtPosition({ x: event.clientX, y: event.clientY });
-    }
-    
-    // Helper to create a button for the popup menu
-    createPopupButton(title: string, icon: string, clickHandler: (e: MouseEvent) => void): HTMLElement {
-        const button = document.createElement("button");
-        button.addClass("clickable-icon");
-        button.setAttribute("aria-label", title);
-        setIcon(button, icon);
-        setTooltip(button, title);
-        button.addEventListener("click", (e) => {
-            e.stopPropagation(); // Prevent the event from closing the popup
-            clickHandler(e);
-        });
-        
-        return button;
     }
 
     getActiveCanvasView(): CanvasView | null {
@@ -1078,5 +1037,24 @@ export default class CanvasFormatBrushPlugin extends Plugin {
         } else {
             textEl.setText("No format copied");
         }
+    }
+
+    // Helper to create a button for the popup menu
+    createPopupButton(
+        title: string,
+        icon: string,
+        clickHandler: (e: MouseEvent) => void,
+    ): HTMLElement {
+        const button = document.createElement("button");
+        button.addClass("clickable-icon");
+        button.setAttribute("aria-label", title);
+        setIcon(button, icon);
+        setTooltip(button, title);
+        button.addEventListener("click", (e: MouseEvent) => {
+            e.stopPropagation(); // Prevent the event from closing the popup
+            clickHandler(e);
+        });
+
+        return button;
     }
 }
