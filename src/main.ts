@@ -102,8 +102,8 @@ export default class CanvasFormatBrushPlugin extends Plugin {
 
         // Add command to copy only the color
         this.addCommand({
-            id: "copy-canvas-color-only",
-            name: "Copy only color from selected canvas element",
+            id: "copy-canvas-color",
+            name: "Copy color from selected canvas element",
             checkCallback: (checking: boolean) => {
                 const canvasView = this.getActiveCanvasView();
 
@@ -120,8 +120,8 @@ export default class CanvasFormatBrushPlugin extends Plugin {
 
         // Add command to copy only the size
         this.addCommand({
-            id: "copy-canvas-size-only",
-            name: "Copy only size from selected canvas element",
+            id: "copy-canvas-size",
+            name: "Copy size from selected canvas element",
             checkCallback: (checking: boolean) => {
                 const canvasView = this.getActiveCanvasView();
 
