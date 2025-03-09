@@ -1012,58 +1012,121 @@ export default class CanvasFormatBrushPlugin extends Plugin {
 
     // Show a submenu with format brush options
     showFormatBrushSubmenu(event: MouseEvent, canvasView: CanvasView) {
-        // Create a new menu
-        const menu = new Menu();
+        // Create a custom menu element
+        const customMenu = document.createElement("div");
+        customMenu.addClass("format-brush-custom-menu");
 
         // Only show copy options if one node is selected
         const hasSingleSelection = canvasView.canvas.selection.size === 1;
 
         if (hasSingleSelection) {
             // Copy all format option
-            menu.addItem((item) => {
-                item.setTitle("Copy format (all)")
-                    .setIcon("clipboard-copy")
-                    .onClick(() => {
-                        // Use the command's functionality directly
-                        this.copyFormat(canvasView);
-                    });
-            });
+            const copyAllButton = this.createCustomMenuItem(
+                "Copy format",
+                "clipboard-copy",
+                "copy-all-item",
+                () => this.copyFormat(canvasView),
+            );
+            customMenu.appendChild(copyAllButton);
 
             // Copy color only option
-            menu.addItem((item) => {
-                item.setTitle("Copy color only")
-                    .setIcon("palette")
-                    .onClick(() => {
-                        // Use the command's functionality directly
-                        this.copyFormatColorOnly(canvasView);
-                    });
-            });
+            const copyColorButton = this.createCustomMenuItem(
+                "Copy color",
+                "palette",
+                "copy-color-item",
+                () => this.copyFormatColorOnly(canvasView),
+            );
+            customMenu.appendChild(copyColorButton);
 
             // Copy size only option
-            menu.addItem((item) => {
-                item.setTitle("Copy size only")
-                    .setIcon("expand")
-                    .onClick(() => {
-                        // Use the command's functionality directly
-                        this.copyFormatSizeOnly(canvasView);
-                    });
-            });
+            const copySizeButton = this.createCustomMenuItem(
+                "Copy size",
+                "maximize-2",
+                "copy-size-item",
+                () => this.copyFormatSizeOnly(canvasView),
+            );
+            customMenu.appendChild(copySizeButton);
         }
 
         // Add paste button if we have a copied format
         if (this.copiedFormat) {
-            // Paste format option
-            menu.addItem((item) => {
-                item.setTitle("Paste format")
-                    .setIcon("clipboard-paste")
-                    .onClick(() => {
-                        // Use the command's functionality directly
-                        this.pasteFormat(canvasView);
-                    });
-            });
+            const pasteButton = this.createCustomMenuItem(
+                "Paste format",
+                "clipboard-paste",
+                "paste-item",
+                () => this.pasteFormat(canvasView),
+            );
+            customMenu.appendChild(pasteButton);
         }
 
-        // Show the menu at the event position
-        menu.showAtPosition({ x: event.clientX, y: event.clientY });
+        // Position the menu
+        document.body.appendChild(customMenu);
+        const menuRect = customMenu.getBoundingClientRect();
+
+        // Adjust position to keep menu in viewport
+        let xPos = event.clientX;
+        let yPos = event.clientY;
+
+        if (xPos + menuRect.width > window.innerWidth) {
+            xPos = window.innerWidth - menuRect.width - 10;
+        }
+
+        if (yPos + menuRect.height > window.innerHeight) {
+            yPos = window.innerHeight - menuRect.height - 10;
+        }
+
+        customMenu.style.left = `${xPos}px`;
+        customMenu.style.top = `${yPos}px`;
+
+        // Click outside to close
+        const closeOnClickOutside = (e: MouseEvent) => {
+            if (!customMenu.contains(e.target as Node)) {
+                customMenu.remove();
+                document.removeEventListener("click", closeOnClickOutside);
+            }
+        };
+
+        // Wait a moment before adding click listener to prevent immediate closing
+        setTimeout(() => {
+            document.addEventListener("click", closeOnClickOutside);
+        }, 10);
+    }
+
+    // Helper method to create a custom menu item with icon
+    createCustomMenuItem(
+        title: string,
+        iconId: string,
+        className: string,
+        clickHandler: () => void,
+    ): HTMLElement {
+        const menuItem = document.createElement("div");
+        menuItem.addClass("format-brush-custom-menu-item", className);
+
+        // Create icon container
+        const iconContainer = document.createElement("div");
+        iconContainer.addClass("format-brush-custom-icon");
+        setIcon(iconContainer, iconId);
+        menuItem.appendChild(iconContainer);
+
+        // Create label
+        const label = document.createElement("div");
+        label.addClass("format-brush-custom-label");
+        label.setText(title);
+        menuItem.appendChild(label);
+
+        // Add click handler
+        menuItem.addEventListener("click", (e) => {
+            e.stopPropagation();
+            clickHandler();
+
+            // Remove the menu after selection
+            const menu = menuItem.parentElement;
+            if (menu) {
+                menu.remove();
+                // We can't access the specific listener, so we just remove the menu
+            }
+        });
+
+        return menuItem;
     }
 }

@@ -53,8 +53,113 @@
     height: 24px;
 }
 
+/* Ensure the brush icon specifically is sized correctly */
 .format-brush-menu-item svg.svg-icon.lucide-brush {
     width: 24px !important;
     height: 24px !important;
     stroke-width: 1.5px;
+}
+
+/* Custom format brush submenu styles */
+.format-brush-custom-menu {
+    position: absolute;
+    z-index: 1000;
+    background-color: var(--background-primary);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    min-width: 180px;
+    padding: 4px;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.format-brush-custom-menu-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    margin-bottom: 2px;
+}
+
+.format-brush-custom-menu-item:last-child {
+    margin-bottom: 0;
+}
+
+.format-brush-custom-menu-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.format-brush-custom-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    width: 22px;
+}
+
+.format-brush-custom-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.format-brush-custom-label {
+    font-size: 13px;
+    color: var(--text-normal);
+}
+
+/* Color specific icons */
+.copy-all-item .format-brush-custom-icon svg {
+    color: var(--text-accent);
+}
+
+.copy-color-item .format-brush-custom-icon svg {
+    color: var(--color-green);
+}
+
+.copy-size-item .format-brush-custom-icon svg {
+    color: var(--color-blue);
+}
+
+.paste-item .format-brush-custom-icon svg {
+    color: var(--color-orange);
+}
+
+/* Format brush submenu styles */
+.format-brush-submenu .menu-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    height: 28px;
+}
+
+/* Make the icons more prominent in submenu */
+.format-brush-submenu .menu-item .menu-item-icon {
+    margin-right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.format-brush-submenu .menu-item .menu-item-icon svg {
+    width: 18px !important;
+    height: 18px !important;
+    stroke-width: 2px;
+}
+
+/* Specific styling for different action types */
+.format-brush-submenu .copy-all-item .menu-item-icon svg {
+    color: var(--text-accent) !important;
+}
+
+.format-brush-submenu .copy-color-item .menu-item-icon svg {
+    color: var(--color-green) !important;
+}
+
+.format-brush-submenu .copy-size-item .menu-item-icon svg {
+    color: var(--color-blue) !important;
+}
+
+.format-brush-submenu .paste-item .menu-item-icon svg {
+    color: var(--color-orange) !important;
 }
