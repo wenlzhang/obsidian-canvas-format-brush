@@ -16,6 +16,12 @@ An [Obsidian](https://obsidian.md/) plugin that allows you to copy and paste for
 - Context menu and commands
 - Status bar indicator showing when format is copied
 
+## Videos
+
+<a href="https://youtu.be/mM0rvHQGk-k?si=AplgFiFVpols4N-C" target="_blank">
+  <img src="./docs/attachment/thumbnail-demo.png" width="800" alt="New Plugin: Format Painter for Obsidian Canvas" />
+</a>
+
 ## Commands
 
 - **Copy format**: Copies all formatting attributes from the currently selected canvas element
