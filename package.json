@@ -1,7 +1,7 @@
 {
     "name": "canvas-format-brush",
     "version": "0.0.1",
-    "description": "Copy and paste formatting between canvas elements, such as card size, color, and other attributes.",
+    "description": "Copy and paste formatting attributes (size and color) between canvas elements, similar to the format painter in Word.",
     "main": "main.js",
     "scripts": {
         "dev": "node esbuild.config.mjs",
