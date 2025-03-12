@@ -28,6 +28,20 @@
     border: 1px solid var(--background-modifier-border);
 }
 
+/* Status bar visibility classes */
+.status-bar-hidden {
+    display: none;
+}
+
+.status-bar-visible {
+    display: block;
+}
+
+/* Color preview with variable */
+.canvas-format-brush-color-preview-dynamic {
+    background-color: var(--color-preview-background, transparent);
+}
+
 /* Canvas context menu button styles */
 .format-brush-menu-item {
     display: flex;
@@ -71,6 +85,8 @@
     min-width: 180px;
     padding: 4px;
     border: 1px solid var(--background-modifier-border);
+    left: var(--menu-left-position, 0);
+    top: var(--menu-top-position, 0);
 }
 
 .format-brush-custom-menu-item {

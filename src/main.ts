@@ -220,7 +220,8 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                     } else {
                         // Hide status bar if not in canvas view
                         if (this.statusBarItem) {
-                            this.statusBarItem.style.display = "none";
+                            this.statusBarItem.addClass("status-bar-hidden");
+                            this.statusBarItem.removeClass("status-bar-visible");
                         }
                     }
                 },
@@ -954,11 +955,13 @@ export default class CanvasFormatBrushPlugin extends Plugin {
         // Only show if enabled in settings and we're in a canvas view
         const canvasView = this.getActiveCanvasView();
         if (!this.settings.showStatusBarItem || !canvasView) {
-            this.statusBarItem.style.display = "none";
+            this.statusBarItem.addClass("status-bar-hidden");
+            this.statusBarItem.removeClass("status-bar-visible");
             return;
         }
 
-        this.statusBarItem.style.display = "block";
+        this.statusBarItem.addClass("status-bar-visible");
+        this.statusBarItem.removeClass("status-bar-hidden");
         this.statusBarItem.empty();
 
         const container = this.statusBarItem.createEl("div", {
@@ -984,7 +987,8 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 const colorPreview = container.createEl("div", {
                     cls: "canvas-format-brush-color-preview",
                 });
-                colorPreview.style.backgroundColor = this.copiedFormat.color;
+                colorPreview.style.setProperty('--color-preview-background', this.copiedFormat.color);
+                colorPreview.addClass('canvas-format-brush-color-preview-dynamic');
             }
         } else {
             textEl.setText("No format copied");
@@ -1082,8 +1086,8 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             yPos = window.innerHeight - menuRect.height - 10;
         }
 
-        customMenu.style.left = `${xPos}px`;
-        customMenu.style.top = `${yPos}px`;
+        customMenu.style.setProperty('--menu-left-position', `${xPos}px`);
+        customMenu.style.setProperty('--menu-top-position', `${yPos}px`);
 
         // Click outside to close
         const closeOnClickOutside = (e: MouseEvent) => {
