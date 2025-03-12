@@ -84,7 +84,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
 
     async onload() {
         await this.loadSettings();
-        
+
         // Set debug mode based on settings
         log.setDebugMode(this.settings.debugMode);
 
@@ -100,17 +100,16 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 log.debug(`Copy command check - Canvas view: ${!!canvasView}`);
 
                 if (canvasView) {
-                    log.debug(`Canvas selection size: ${canvasView.canvas.selection.size}`);
-                    
+                    log.debug(
+                        `Canvas selection size: ${canvasView.canvas.selection.size}`,
+                    );
+
                     // Single debug statement for canvas information
                     if (this.settings.debugMode) {
-                        log.debug(
-                            "Canvas data", 
-                            {
-                                selection: Array.from(canvasView.canvas.selection),
-                                nodesCount: canvasView.canvas.nodes.size
-                            }
-                        );
+                        log.debug("Canvas data", {
+                            selection: Array.from(canvasView.canvas.selection),
+                            nodesCount: canvasView.canvas.nodes.size,
+                        });
                     }
 
                     // Log first few node keys for debugging
@@ -174,7 +173,9 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 log.debug(`Paste command check - Canvas view: ${!!canvasView}`);
 
                 if (canvasView) {
-                    log.debug(`Canvas selection size: ${canvasView.canvas.selection.size}`);
+                    log.debug(
+                        `Canvas selection size: ${canvasView.canvas.selection.size}`,
+                    );
                 }
 
                 if (
@@ -222,7 +223,9 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                         // Hide status bar if not in canvas view
                         if (this.statusBarItem) {
                             this.statusBarItem.addClass("status-bar-hidden");
-                            this.statusBarItem.removeClass("status-bar-visible");
+                            this.statusBarItem.removeClass(
+                                "status-bar-visible",
+                            );
                         }
                     }
                 },
@@ -253,7 +256,9 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 // Get the active canvas view
                 const canvasView = this.getActiveCanvasView();
                 if (!canvasView) {
-                    log.debug("No active canvas view found, will try again later");
+                    log.debug(
+                        "No active canvas view found, will try again later",
+                    );
                     return false;
                 }
 
@@ -318,7 +323,9 @@ export default class CanvasFormatBrushPlugin extends Plugin {
 
                             // Add the button to the menu
                             canvasMenu.menuEl.appendChild(buttonEl);
-                            log.debug("Format brush button added to canvas menu");
+                            log.debug(
+                                "Format brush button added to canvas menu",
+                            );
                         }
                     }
 
@@ -376,7 +383,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                     log.debug("Canvas details:", {
                         properties: Object.keys(view.canvas),
                         hasNodes: !!view.canvas.nodes,
-                        hasSelection: !!view.canvas.selection
+                        hasSelection: !!view.canvas.selection,
                     });
                 }
             } else {
@@ -399,10 +406,12 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 if (this.settings.debugMode) {
                     log.debug("Node details", {
                         type: typeof node,
-                        constructorName: node.constructor ? node.constructor.name : "Unknown",
+                        constructorName: node.constructor
+                            ? node.constructor.name
+                            : "Unknown",
                         properties: Object.keys(node),
                         id: node.id,
-                        isTextNode: node.text !== undefined
+                        isTextNode: node.text !== undefined,
                     });
                 }
             }
@@ -449,10 +458,12 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 if (this.settings.debugMode) {
                     log.debug("Node details", {
                         type: typeof node,
-                        constructorName: node.constructor ? node.constructor.name : "Unknown",
+                        constructorName: node.constructor
+                            ? node.constructor.name
+                            : "Unknown",
                         properties: Object.keys(node),
                         id: node.id,
-                        isTextNode: node.text !== undefined
+                        isTextNode: node.text !== undefined,
                     });
                 }
             }
@@ -489,10 +500,12 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 if (this.settings.debugMode) {
                     log.debug("Node details", {
                         type: typeof node,
-                        constructorName: node.constructor ? node.constructor.name : "Unknown",
+                        constructorName: node.constructor
+                            ? node.constructor.name
+                            : "Unknown",
                         properties: Object.keys(node),
                         id: node.id,
-                        isTextNode: node.text !== undefined
+                        isTextNode: node.text !== undefined,
                     });
                 }
             }
@@ -541,7 +554,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 log.debug("Node properties:", {
                     id: node.id,
                     color: node.color,
-                    size: `${node.width}x${node.height}`
+                    size: `${node.width}x${node.height}`,
                 });
             }
 
@@ -933,11 +946,13 @@ export default class CanvasFormatBrushPlugin extends Plugin {
     async saveSettings() {
         await this.saveData(this.settings);
     }
-    
+
     updateLoggerDebugMode() {
         // Update logger debug mode based on current settings
         log.setDebugMode(this.settings.debugMode);
-        log.info(`Debug mode ${this.settings.debugMode ? 'enabled' : 'disabled'}`);
+        log.info(
+            `Debug mode ${this.settings.debugMode ? "enabled" : "disabled"}`,
+        );
     }
 
     initStatusBar() {
@@ -987,8 +1002,13 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 const colorPreview = container.createEl("div", {
                     cls: "canvas-format-brush-color-preview",
                 });
-                colorPreview.style.setProperty('--color-preview-background', this.copiedFormat.color);
-                colorPreview.addClass('canvas-format-brush-color-preview-dynamic');
+                colorPreview.style.setProperty(
+                    "--color-preview-background",
+                    this.copiedFormat.color,
+                );
+                colorPreview.addClass(
+                    "canvas-format-brush-color-preview-dynamic",
+                );
             }
         } else {
             textEl.setText("No format copied");
@@ -1086,8 +1106,8 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             yPos = window.innerHeight - menuRect.height - 10;
         }
 
-        customMenu.style.setProperty('--menu-left-position', `${xPos}px`);
-        customMenu.style.setProperty('--menu-top-position', `${yPos}px`);
+        customMenu.style.setProperty("--menu-left-position", `${xPos}px`);
+        customMenu.style.setProperty("--menu-top-position", `${yPos}px`);
 
         // Click outside to close
         const closeOnClickOutside = (e: MouseEvent) => {

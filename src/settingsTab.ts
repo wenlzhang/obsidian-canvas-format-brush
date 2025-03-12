@@ -65,15 +65,15 @@ export class SettingsTab extends PluginSettingTab {
                         await this.plugin.saveSettings();
                     }),
             );
-            
+
         // Advanced Settings
-        new Setting(containerEl)
-            .setName("Advanced")
-            .setHeading();
-            
+        new Setting(containerEl).setName("Advanced").setHeading();
+
         new Setting(containerEl)
             .setName("Debug mode")
-            .setDesc("Enable detailed logging in the developer console for troubleshooting")
+            .setDesc(
+                "Enable detailed logging in the developer console for troubleshooting",
+            )
             .addToggle((toggle: ToggleComponent) =>
                 toggle
                     .setValue(this.plugin.settings.debugMode)
