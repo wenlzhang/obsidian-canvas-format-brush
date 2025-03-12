@@ -10,6 +10,7 @@ import {
 } from "obsidian";
 import { SettingsTab } from "./settingsTab";
 import { CanvasFormatBrushSettings, DEFAULT_SETTINGS } from "./settings";
+import { log } from "./logger";
 
 // Define interfaces for Canvas API
 interface CanvasNodeData {
@@ -83,6 +84,9 @@ export default class CanvasFormatBrushPlugin extends Plugin {
 
     async onload() {
         await this.loadSettings();
+        
+        // Set debug mode based on settings
+        log.setDebugMode(this.settings.debugMode);
 
         // Add settings tab
         this.addSettingTab(new SettingsTab(this.app, this));
@@ -93,27 +97,27 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             name: "Copy format",
             checkCallback: (checking: boolean) => {
                 const canvasView = this.getActiveCanvasView();
-                console.log("Copy command check - Canvas view:", !!canvasView);
+                log.debug(`Copy command check - Canvas view: ${!!canvasView}`);
 
                 if (canvasView) {
-                    console.log(
-                        "Canvas selection size:",
-                        canvasView.canvas.selection.size,
-                    );
-                    console.log(
-                        "Canvas selection:",
-                        Array.from(canvasView.canvas.selection),
-                    );
-                    console.log(
-                        "Canvas nodes count:",
-                        canvasView.canvas.nodes.size,
-                    );
+                    log.debug(`Canvas selection size: ${canvasView.canvas.selection.size}`);
+                    
+                    // Single debug statement for canvas information
+                    if (this.settings.debugMode) {
+                        log.debug(
+                            "Canvas data", 
+                            {
+                                selection: Array.from(canvasView.canvas.selection),
+                                nodesCount: canvasView.canvas.nodes.size
+                            }
+                        );
+                    }
 
                     // Log first few node keys for debugging
                     const nodeKeys = Array.from(
                         canvasView.canvas.nodes.keys(),
                     ).slice(0, 3);
-                    console.log("Sample node keys:", nodeKeys);
+                    log.debug("Sample node keys:", nodeKeys);
                 }
 
                 if (canvasView && canvasView.canvas.selection.size === 1) {
@@ -167,13 +171,10 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             name: "Paste format",
             checkCallback: (checking: boolean) => {
                 const canvasView = this.getActiveCanvasView();
-                console.log("Paste command check - Canvas view:", !!canvasView);
+                log.debug(`Paste command check - Canvas view: ${!!canvasView}`);
 
                 if (canvasView) {
-                    console.log(
-                        "Canvas selection size:",
-                        canvasView.canvas.selection.size,
-                    );
+                    log.debug(`Canvas selection size: ${canvasView.canvas.selection.size}`);
                 }
 
                 if (
@@ -212,7 +213,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                         leaf.view &&
                         leaf.view.getViewType() === "canvas"
                     ) {
-                        console.log("Active leaf changed to canvas view");
+                        log.debug("Active leaf changed to canvas view");
                         this.updateStatusBar();
 
                         // Ensure popup menu is patched when switching to a canvas
@@ -233,7 +234,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
         if (this.statusBarItem) {
             this.statusBarItem.remove();
         }
-        console.log("Canvas Format Brush plugin unloaded");
+        log.info("Canvas Format Brush plugin unloaded");
     }
 
     // Patch the canvas popup menu to add our format brush buttons
@@ -241,29 +242,25 @@ export default class CanvasFormatBrushPlugin extends Plugin {
         try {
             // Only patch once
             if (this.patchedPopupMenu) {
-                console.log("Canvas popup menu already patched");
+                log.debug("Canvas popup menu already patched");
                 return;
             }
 
-            console.log("Setting up canvas context menu integration");
+            log.debug("Setting up canvas context menu integration");
 
             // We need to wait for a canvas view to be active
             const patchMenu = () => {
                 // Get the active canvas view
                 const canvasView = this.getActiveCanvasView();
                 if (!canvasView) {
-                    console.log(
-                        "No active canvas view found, will try again later",
-                    );
+                    log.debug("No active canvas view found, will try again later");
                     return false;
                 }
 
                 // Access the canvas instance
                 const canvas = canvasView.canvas;
                 if (!canvas || !canvas.menu) {
-                    console.log(
-                        "Canvas or menu not found, will try again later",
-                    );
+                    log.debug("Canvas or menu not found, will try again later");
                     return false;
                 }
 
@@ -277,7 +274,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                     // Call the original render method first to ensure all default menu items are rendered
                     const result = originalRender.apply(canvasMenu, args);
 
-                    console.log(
+                    log.debug(
                         "Canvas menu render called, adding format brush button",
                     );
 
@@ -321,9 +318,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
 
                             // Add the button to the menu
                             canvasMenu.menuEl.appendChild(buttonEl);
-                            console.log(
-                                "Format brush button added to canvas menu",
-                            );
+                            log.debug("Format brush button added to canvas menu");
                         }
                     }
 
@@ -336,9 +331,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 }
 
                 this.patchedPopupMenu = true;
-                console.log(
-                    "Canvas context menu integration set up successfully",
-                );
+                log.info("Canvas context menu integration set up successfully");
 
                 return true;
             };
@@ -371,43 +364,46 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             activeLeaf.view &&
             activeLeaf.view.getViewType() === "canvas"
         ) {
-            console.log("Found active canvas view");
+            log.debug("Found active canvas view");
 
             // Log the structure of the view for debugging
             const view = activeLeaf.view as unknown as CanvasView;
-            console.log("Canvas view structure:", Object.keys(view));
+            log.debug("Canvas view structure:", Object.keys(view));
 
             if (view.canvas) {
-                console.log("Canvas properties:", Object.keys(view.canvas));
-                console.log("Has nodes:", !!view.canvas.nodes);
-                console.log("Has selection:", !!view.canvas.selection);
+                // Group all debug info into a single log message
+                if (this.settings.debugMode) {
+                    log.debug("Canvas details:", {
+                        properties: Object.keys(view.canvas),
+                        hasNodes: !!view.canvas.nodes,
+                        hasSelection: !!view.canvas.selection
+                    });
+                }
             } else {
-                console.log("Canvas property missing from view");
+                log.error("Canvas property missing from view");
             }
 
             return view;
         }
-        console.log("No active canvas view found");
+        log.debug("No active canvas view found");
         return null;
     }
 
     copyFormatFromNode(node: any) {
-        console.log("copyFormatFromNode called with node:", !!node);
+        log.debug(`copyFormatFromNode called with node: ${!!node}`);
 
         try {
             // Log node structure for debugging
             if (node) {
-                console.log("Node type:", typeof node);
-                console.log(
-                    "Node constructor name:",
-                    node.constructor ? node.constructor.name : "Unknown",
-                );
-                console.log("Node properties:", Object.keys(node));
-                console.log("Node ID:", node.id);
-
-                // Check for specific type of node
-                if (node.text !== undefined) {
-                    console.log("Node appears to be a text node");
+                // Group all node debug info into a single log message
+                if (this.settings.debugMode) {
+                    log.debug("Node details", {
+                        type: typeof node,
+                        constructorName: node.constructor ? node.constructor.name : "Unknown",
+                        properties: Object.keys(node),
+                        id: node.id,
+                        isTextNode: node.text !== undefined
+                    });
                 }
             }
 
@@ -416,7 +412,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
 
             // We'll copy directly from node properties to avoid data structure issues
             if (this.settings.copyColor && node.color !== undefined) {
-                console.log("Copying color:", node.color);
+                log.debug(`Copying color: ${node.color}`);
                 this.copiedFormat.color = String(node.color);
             }
 
@@ -425,12 +421,12 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 node.width !== undefined &&
                 node.height !== undefined
             ) {
-                console.log("Copying size:", node.width, "x", node.height);
+                log.debug(`Copying size: ${node.width}x${node.height}`);
                 this.copiedFormat.width = Number(node.width);
                 this.copiedFormat.height = Number(node.height);
             }
 
-            console.log("Copied format:", this.copiedFormat);
+            log.debug("Copied format:", this.copiedFormat);
 
             // Show a notice
             new Notice("Format copied from canvas element");
@@ -438,28 +434,26 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             // Update status bar
             this.updateStatusBar();
         } catch (error) {
-            console.error("Error in copyFormatFromNode:", error);
+            log.error("Error in copyFormatFromNode:", error);
             new Notice("Error copying format");
         }
     }
 
     copyFormatColorOnlyFromNode(node: any) {
-        console.log("copyFormatColorOnlyFromNode called with node:", !!node);
+        log.debug(`copyFormatColorOnlyFromNode called with node: ${!!node}`);
 
         try {
             // Log node structure for debugging
             if (node) {
-                console.log("Node type:", typeof node);
-                console.log(
-                    "Node constructor name:",
-                    node.constructor ? node.constructor.name : "Unknown",
-                );
-                console.log("Node properties:", Object.keys(node));
-                console.log("Node ID:", node.id);
-
-                // Check for specific type of node
-                if (node.text !== undefined) {
-                    console.log("Node appears to be a text node");
+                // Group all node debug info into a single log message
+                if (this.settings.debugMode) {
+                    log.debug("Node details", {
+                        type: typeof node,
+                        constructorName: node.constructor ? node.constructor.name : "Unknown",
+                        properties: Object.keys(node),
+                        id: node.id,
+                        isTextNode: node.text !== undefined
+                    });
                 }
             }
 
@@ -468,11 +462,11 @@ export default class CanvasFormatBrushPlugin extends Plugin {
 
             // We'll copy directly from node properties to avoid data structure issues
             if (this.settings.copyColor && node.color !== undefined) {
-                console.log("Copying color:", node.color);
+                log.debug(`Copying color: ${node.color}`);
                 this.copiedFormat.color = String(node.color);
             }
 
-            console.log("Copied format:", this.copiedFormat);
+            log.debug("Copied format:", this.copiedFormat);
 
             // Show a notice
             new Notice("Color copied from canvas element");
@@ -480,28 +474,26 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             // Update status bar
             this.updateStatusBar();
         } catch (error) {
-            console.error("Error in copyFormatColorOnlyFromNode:", error);
+            log.error("Error in copyFormatColorOnlyFromNode:", error);
             new Notice("Error copying color");
         }
     }
 
     copyFormatSizeOnlyFromNode(node: any) {
-        console.log("copyFormatSizeOnlyFromNode called with node:", !!node);
+        log.debug(`copyFormatSizeOnlyFromNode called with node: ${!!node}`);
 
         try {
             // Log node structure for debugging
             if (node) {
-                console.log("Node type:", typeof node);
-                console.log(
-                    "Node constructor name:",
-                    node.constructor ? node.constructor.name : "Unknown",
-                );
-                console.log("Node properties:", Object.keys(node));
-                console.log("Node ID:", node.id);
-
-                // Check for specific type of node
-                if (node.text !== undefined) {
-                    console.log("Node appears to be a text node");
+                // Group all node debug info into a single log message
+                if (this.settings.debugMode) {
+                    log.debug("Node details", {
+                        type: typeof node,
+                        constructorName: node.constructor ? node.constructor.name : "Unknown",
+                        properties: Object.keys(node),
+                        id: node.id,
+                        isTextNode: node.text !== undefined
+                    });
                 }
             }
 
@@ -514,12 +506,12 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 node.width !== undefined &&
                 node.height !== undefined
             ) {
-                console.log("Copying size:", node.width, "x", node.height);
+                log.debug(`Copying size: ${node.width}x${node.height}`);
                 this.copiedFormat.width = Number(node.width);
                 this.copiedFormat.height = Number(node.height);
             }
 
-            console.log("Copied format:", this.copiedFormat);
+            log.debug("Copied format:", this.copiedFormat);
 
             // Show a notice
             new Notice("Size copied from canvas element");
@@ -527,7 +519,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             // Update status bar
             this.updateStatusBar();
         } catch (error) {
-            console.error("Error in copyFormatSizeOnlyFromNode:", error);
+            log.error("Error in copyFormatSizeOnlyFromNode:", error);
             new Notice("Error copying size");
         }
     }
@@ -538,15 +530,20 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             return false;
         }
 
-        console.log("pasteFormatToNode called with node:", !!node);
+        log.debug(`pasteFormatToNode called with node: ${!!node}`);
 
         try {
             // Instead of modifying the node directly, we'll work with the canvas data
             // This ensures that Obsidian's internal state remains consistent
 
-            console.log("Node ID:", node.id);
-            console.log("Node current color:", node.color);
-            console.log("Node current size:", node.width, "x", node.height);
+            // Group node info into a single debug message
+            if (this.settings.debugMode) {
+                log.debug("Node properties:", {
+                    id: node.id,
+                    color: node.color,
+                    size: `${node.width}x${node.height}`
+                });
+            }
 
             // Capture original values before changes
             const originalValues = {
@@ -556,7 +553,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 height: node.height,
             };
 
-            console.log("Original values:", originalValues);
+            log.debug("Original values:", originalValues);
 
             // Create a list of changes to apply with proper type definition
             interface CanvasNodeChanges {
@@ -583,11 +580,11 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             }
 
             if (!changesMade) {
-                console.log("No changes to apply");
+                log.debug("No changes to apply");
                 return false;
             }
 
-            console.log("Changes to apply:", changes);
+            log.debug("Changes to apply:", changes);
 
             // First, try to use the best available methods
             const useDirectMethods = true;
@@ -600,7 +597,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                         changes.color !== undefined &&
                         typeof node.setColor === "function"
                     ) {
-                        console.log("Applying color via setColor");
+                        log.debug("Applying color via setColor");
                         node.setColor(changes.color);
                     }
 
@@ -611,29 +608,29 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                     ) {
                         // Try different approaches based on node type
                         if (typeof node.setDimensions === "function") {
-                            console.log("Applying size via setDimensions");
+                            log.debug("Applying size via setDimensions");
                             node.setDimensions(changes.width, changes.height);
                         } else if (typeof node.resize === "function") {
-                            console.log("Applying size via resize");
+                            log.debug("Applying size via resize");
                             node.resize(changes.width, changes.height);
                         }
 
                         // Some nodes need their bbox updated directly
                         if (node.bbox) {
-                            console.log("Updating bbox size directly");
+                            log.debug("Updating bbox size directly");
                             node.bbox.width = changes.width;
                             node.bbox.height = changes.height;
                         }
 
                         // Ensure the node's width/height are set directly as well
-                        console.log("Setting width/height directly");
+                        log.debug("Setting width/height directly");
                         node.width = changes.width;
                         node.height = changes.height;
                     }
 
                     // Try to update the node's visual representation if needed
                     if (typeof node.update === "function") {
-                        console.log("Calling node.update()");
+                        log.debug("Calling node.update()");
                         node.update();
                     }
 
@@ -642,10 +639,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
 
                     return true;
                 } catch (e) {
-                    console.error(
-                        "Error applying changes with direct methods:",
-                        e,
-                    );
+                    log.error("Error applying changes with direct methods:", e);
                     // If direct methods fail, we'll try a different approach
                 }
             }
@@ -659,7 +653,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
 
     // Special method to ensure the canvas is properly updated
     ensureCanvasUpdate(canvasView: CanvasView, node: any) {
-        console.log("Ensuring canvas update for node:", node.id);
+        log.debug(`Ensuring canvas update for node: ${node.id}`);
 
         try {
             // First, attempt to update the node in the canvas nodes map
@@ -667,56 +661,56 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 canvasView.canvas.nodes &&
                 canvasView.canvas.nodes.has(node.id)
             ) {
-                console.log("Node found in canvas nodes map");
+                log.debug("Node found in canvas nodes map");
             }
 
             // Essential - save the changes
-            console.log("Requesting canvas save");
+            log.debug("Requesting canvas save");
             canvasView.canvas.requestSave();
 
             // Try to trigger visual updates
             if (typeof canvasView.canvas.requestFrame === "function") {
-                console.log("Requesting canvas frame update");
+                log.debug("Requesting canvas frame update");
                 canvasView.canvas.requestFrame();
             }
 
             // Create a very small timeout to allow the canvas to process updates
             setTimeout(() => {
                 if (typeof canvasView.canvas.requestFrame === "function") {
-                    console.log("Delayed requesting canvas frame update");
+                    log.debug("Delayed requesting canvas frame update");
                     canvasView.canvas.requestFrame();
                 }
 
                 if (typeof canvasView.canvas.render === "function") {
-                    console.log("Delayed requesting canvas render");
+                    log.debug("Delayed requesting canvas render");
                     canvasView.canvas.render();
                 }
             }, 50);
         } catch (e) {
-            console.error("Error ensuring canvas update:", e);
+            log.error("Error ensuring canvas update:", e);
         }
     }
 
     copyFormat(canvasView: CanvasView) {
         try {
-            console.log("copyFormat called");
+            log.debug("copyFormat called");
 
             // Get the selected node
             const selectedElements = Array.from(canvasView.canvas.selection);
-            console.log("Selected elements:", selectedElements);
+            log.debug("Selected elements:", selectedElements);
 
             if (selectedElements.length === 0) {
-                console.log("No elements selected");
+                log.debug("No elements selected");
                 new Notice("No canvas element selected");
                 return;
             }
 
             // The selection is the actual node object, not just an ID
             const selectedNode = selectedElements[0];
-            console.log("Selected node type:", typeof selectedNode);
+            log.debug(`Selected node type: ${typeof selectedNode}`);
 
             if (!selectedNode) {
-                console.log("Selected node is null");
+                log.debug("Selected node is null");
                 new Notice("No canvas element selected");
                 return;
             }
@@ -730,24 +724,24 @@ export default class CanvasFormatBrushPlugin extends Plugin {
 
     copyFormatColorOnly(canvasView: CanvasView) {
         try {
-            console.log("copyFormatColorOnly called");
+            log.debug("copyFormatColorOnly called");
 
             // Get the selected node
             const selectedElements = Array.from(canvasView.canvas.selection);
-            console.log("Selected elements:", selectedElements);
+            log.debug("Selected elements:", selectedElements);
 
             if (selectedElements.length === 0) {
-                console.log("No elements selected");
+                log.debug("No elements selected");
                 new Notice("No canvas element selected");
                 return;
             }
 
             // The selection is the actual node object, not just an ID
             const selectedNode = selectedElements[0];
-            console.log("Selected node type:", typeof selectedNode);
+            log.debug(`Selected node type: ${typeof selectedNode}`);
 
             if (!selectedNode) {
-                console.log("Selected node is null");
+                log.debug("Selected node is null");
                 new Notice("No canvas element selected");
                 return;
             }
@@ -761,24 +755,24 @@ export default class CanvasFormatBrushPlugin extends Plugin {
 
     copyFormatSizeOnly(canvasView: CanvasView) {
         try {
-            console.log("copyFormatSizeOnly called");
+            log.debug("copyFormatSizeOnly called");
 
             // Get the selected node
             const selectedElements = Array.from(canvasView.canvas.selection);
-            console.log("Selected elements:", selectedElements);
+            log.debug("Selected elements:", selectedElements);
 
             if (selectedElements.length === 0) {
-                console.log("No elements selected");
+                log.debug("No elements selected");
                 new Notice("No canvas element selected");
                 return;
             }
 
             // The selection is the actual node object, not just an ID
             const selectedNode = selectedElements[0];
-            console.log("Selected node type:", typeof selectedNode);
+            log.debug(`Selected node type: ${typeof selectedNode}`);
 
             if (!selectedNode) {
-                console.log("Selected node is null");
+                log.debug("Selected node is null");
                 new Notice("No canvas element selected");
                 return;
             }
@@ -797,15 +791,15 @@ export default class CanvasFormatBrushPlugin extends Plugin {
         }
 
         try {
-            console.log("pasteFormat called");
-            console.log("Canvas object:", Object.keys(canvasView.canvas));
+            log.debug("pasteFormat called");
+            log.debug("Canvas object:", Object.keys(canvasView.canvas));
 
             // Get all selected nodes
             const selectedElements = Array.from(canvasView.canvas.selection);
-            console.log("Selected elements for paste:", selectedElements);
+            log.debug("Selected elements for paste:", selectedElements);
 
             if (selectedElements.length === 0) {
-                console.log("No elements selected for paste");
+                log.debug("No elements selected for paste");
                 new Notice("No canvas elements selected");
                 return;
             }
@@ -825,7 +819,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 }
             }
 
-            console.log("Modified node count:", modifiedCount);
+            log.debug(`Modified node count: ${modifiedCount}`);
 
             if (modifiedCount > 0) {
                 // Show a notice
@@ -834,13 +828,13 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 );
 
                 // Request save one more time at the end
-                console.log("Final requestSave() call");
+                log.debug("Final requestSave() call");
                 canvasView.canvas.requestSave();
 
                 // Do one final delayed update
                 setTimeout(() => {
                     if (typeof canvasView.canvas.requestFrame === "function") {
-                        console.log("Final delayed frame update");
+                        log.debug("Final delayed frame update");
                         canvasView.canvas.requestFrame();
                     }
                 }, 100);
@@ -856,16 +850,16 @@ export default class CanvasFormatBrushPlugin extends Plugin {
     // Get node data safely, handling different possible structures
     getNodeData(node: any): CanvasNodeData | null {
         try {
-            console.log("getNodeData called with node:", !!node);
+            log.debug("getNodeData called with node:", !!node);
 
             // Check if node is null or undefined
             if (!node) {
-                console.log("Node is null or undefined");
+                log.debug("Node is null or undefined");
                 return null;
             }
 
             // Log node structure for debugging
-            console.log("Node structure:", Object.keys(node));
+            log.debug("Node structure:", Object.keys(node));
 
             // Approach 1: Check if node is already a data object (has x, y, width, height)
             if (
@@ -874,19 +868,19 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 typeof node.width === "number" &&
                 typeof node.height === "number"
             ) {
-                console.log("Node appears to be a direct data object");
+                log.debug("Node appears to be a direct data object");
                 return node;
             }
 
             // Approach 2: Check if node has a data property
             if (node.data && typeof node.data === "object") {
-                console.log("Node has a data property");
+                log.debug("Node has a data property");
                 return node.data;
             }
 
             // Approach 3: Check if node has a getData method
             if (typeof node.getData === "function") {
-                console.log("Node has a getData method");
+                log.debug("Node has a getData method");
                 const data = node.getData();
                 if (data) return data;
             }
@@ -894,7 +888,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
             // Approach 4: For some node types, x, y, width, height might be direct properties
             // but not in a data object
             if (node.width !== undefined && node.height !== undefined) {
-                console.log("Node has width/height as direct properties");
+                log.debug("Node has width/height as direct properties");
                 // Create a copy of the properties we need
                 return {
                     id: node.id,
@@ -908,7 +902,7 @@ export default class CanvasFormatBrushPlugin extends Plugin {
 
             // Approach 5: Check if node has a bbox property
             if (node.bbox && typeof node.bbox === "object") {
-                console.log("Node has a bbox property");
+                log.debug("Node has a bbox property");
                 // Create a data structure from bbox
                 return {
                     id: node.id,
@@ -920,10 +914,10 @@ export default class CanvasFormatBrushPlugin extends Plugin {
                 };
             }
 
-            console.log("Failed to get node data from node");
+            log.debug("Failed to get node data from node");
             return null;
         } catch (error) {
-            console.error("Error in getNodeData:", error);
+            log.error("Error in getNodeData:", error);
             return null;
         }
     }
@@ -938,6 +932,12 @@ export default class CanvasFormatBrushPlugin extends Plugin {
 
     async saveSettings() {
         await this.saveData(this.settings);
+    }
+    
+    updateLoggerDebugMode() {
+        // Update logger debug mode based on current settings
+        log.setDebugMode(this.settings.debugMode);
+        log.info(`Debug mode ${this.settings.debugMode ? 'enabled' : 'disabled'}`);
     }
 
     initStatusBar() {
