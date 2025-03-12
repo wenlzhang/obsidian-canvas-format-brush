@@ -6,7 +6,7 @@
 export class Logger {
     private isDebugMode: boolean;
 
-    constructor(isDebugMode: boolean = false) {
+    constructor(isDebugMode = false) {
         this.isDebugMode = isDebugMode;
     }
 
