@@ -29,45 +29,37 @@ An [Obsidian](https://obsidian.md/) plugin that allows you to copy and paste for
 - **Copy color**: Copies only color attributes from the selected canvas element
 - **Paste format**: Applies the copied formatting to all currently selected canvas elements
 
-## How to Use
+## Documentation
 
-1. Click on a canvas element you want to copy formatting from
-2. Select the Format Brush icon from the canvas context menu
-3. Choose from the submenu options:
-   - **Copy format**: Copy all formatting attributes
-   - **Copy size**: Copy only the size attributes
-   - **Copy color**: Copy only the color attributes
-   - **Paste format**: Apply the copied formatting (appears after copying)
-4. To paste, select one or more canvas elements, and select the Format Brush icon, and choose "Paste format"
+📚 **[View Full Documentation](https://ptkm.net/obsidian-canvas-format-brush)**
 
-You can also use the commands from the command palette for keyboard shortcuts.
+Visit the documentation site to learn how to make the most of Canvas Format Brush in your Obsidian workflow.
 
-## Settings
+## Support & Community
 
-You can customize which formatting attributes are copied:
+This plugin is a labor of love, developed and maintained during my free time after work and on weekends. A lot of thought, energy, and care goes into making it reliable, user-friendly, and aligned with PTKM principles.
 
-- **Copy color**: Enable/disable copying of the card color
-- **Copy size**: Enable/disable copying of the card size
+If you find this plugin valuable in your daily workflow:
 
-Additional settings:
+- If it helps you copy and paste formatting between canvas elements more effectively
+- If it saves you time and mental energy
 
-- **Show status bar item**: Show/hide the format brush status in the status bar
+Please consider supporting my work. Your support would mean the world to me and would help me dedicate more time and energy to:
 
-## Installation
+- Developing new features
+- Maintaining code quality
+- Providing support and documentation
+- Making the plugin even better for everyone
 
-### From Obsidian
+### Ways to Support
 
-1. Open Settings in Obsidian
-2. Go to Community Plugins and turn off Safe Mode
-3. Click Browse and search for "Canvas Format Brush"
-4. Install the plugin and enable it
+You can support this project in several ways:
 
-### Manual Installation
+- ⭐ Star the project on GitHub
+- 💝 <a href='https://ko-fi.com/C0C66C1TB' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi1.png?v=3' border='0' alt='Buy Me a Coffee' /></a>
+- [Sponsor](https://github.com/sponsors/wenlzhang) my work on GitHub
+- 💌 Share your success stories and feedback
+- 📢 Spread the word about the plugin
+- 🐛 [Report issues](https://github.com/wenlzhang/obsidian-canvas-format-brush/issues) to help improve the plugin
 
-1. Download the latest release from the releases page
-2. Extract the zip file into your Obsidian vault's `.obsidian/plugins` folder
-3. Enable the plugin in Obsidian's Community Plugins settings
-
-## Support me
-
-<a href='https://ko-fi.com/C0C66C1TB' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi1.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+Thank you for being part of this journey! 🙏
